@@ -61,7 +61,17 @@ const MultiplayerChess = () => {
           const updatedSession = payload.new as any;
           
           try {
-            const parsedBoardState = JSON.parse(updatedSession.board_state as string) as (ChessPiece | null)[][];
+            // Handle board state parsing - it might be an object or JSON string
+            let parsedBoardState: (ChessPiece | null)[][];
+            
+            if (typeof updatedSession.board_state === 'string') {
+              parsedBoardState = JSON.parse(updatedSession.board_state) as (ChessPiece | null)[][];
+            } else if (Array.isArray(updatedSession.board_state)) {
+              parsedBoardState = updatedSession.board_state as unknown as (ChessPiece | null)[][];
+            } else {
+              console.error('Invalid board state format:', updatedSession.board_state);
+              parsedBoardState = initialBoard;
+            }
             
             setGameSession({
               ...updatedSession,
@@ -116,6 +126,7 @@ const MultiplayerChess = () => {
           } catch (error) {
             console.error('Error parsing board state:', error);
             console.log('Raw board state:', updatedSession.board_state);
+            console.log('Board state type:', typeof updatedSession.board_state);
             // Fallback to initial board if parsing fails
             setBoard(initialBoard);
           }
@@ -160,7 +171,17 @@ const MultiplayerChess = () => {
     console.log('Game created successfully with ID:', data.id);
 
     try {
-      const parsedBoardState = JSON.parse(data.board_state as string) as (ChessPiece | null)[][];
+      // Handle board state parsing - it might be an object or JSON string
+      let parsedBoardState: (ChessPiece | null)[][];
+      
+      if (typeof data.board_state === 'string') {
+        parsedBoardState = JSON.parse(data.board_state) as (ChessPiece | null)[][];
+      } else if (Array.isArray(data.board_state)) {
+        parsedBoardState = data.board_state as unknown as (ChessPiece | null)[][];
+      } else {
+        console.error('Invalid board state format from database:', data.board_state);
+        parsedBoardState = initialBoard;
+      }
       
       setGameSession({
         ...data,
@@ -182,6 +203,7 @@ const MultiplayerChess = () => {
     } catch (error) {
       console.error('Error parsing board state after game creation:', error);
       console.log('Raw board state from database:', data.board_state);
+      console.log('Board state type:', typeof data.board_state);
       toast({
         title: "Error",
         description: "Failed to initialize game board",
@@ -394,7 +416,17 @@ const MultiplayerChess = () => {
 
       // Set up the game session for the joining player
       try {
-        const parsedBoardState = JSON.parse(updateResult.board_state as string) as (ChessPiece | null)[][];
+        // Handle board state parsing - it might be an object or JSON string
+        let parsedBoardState: (ChessPiece | null)[][];
+        
+        if (typeof updateResult.board_state === 'string') {
+          parsedBoardState = JSON.parse(updateResult.board_state) as (ChessPiece | null)[][];
+        } else if (Array.isArray(updateResult.board_state)) {
+          parsedBoardState = updateResult.board_state as unknown as (ChessPiece | null)[][];
+        } else {
+          console.error('Invalid board state format from database:', updateResult.board_state);
+          parsedBoardState = initialBoard;
+        }
         
         setGameSession({
           ...updateResult,
@@ -414,6 +446,8 @@ const MultiplayerChess = () => {
         });
       } catch (error) {
         console.error('Error parsing board state when joining:', error);
+        console.log('Raw board state from database:', updateResult.board_state);
+        console.log('Board state type:', typeof updateResult.board_state);
         toast({
           title: "Error",
           description: "Failed to initialize game board",
