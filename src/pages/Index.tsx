@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MultiplayerChess from '../components/MultiplayerChess';
 import ChessGame from '../components/ChessGame';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, Users, User, Wallet, Sword, History } from 'lucide-react';
+import { LogOut, Users, User, Wallet, Sword, History, Trophy } from 'lucide-react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 import { LAMPORTS_PER_SOL } from '@solana/web3.js';
@@ -92,13 +92,6 @@ const Index = () => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
-  const leaderboardData = [
-    { id: 1, username: 'cypher', w: 12, d: 3, l: 2, wagered: 2.5, profit: 1.2 },
-    { id: 2, username: 'vortex', w: 10, d: 5, l: 4, wagered: 3.1, profit: 0.8 },
-    { id: 3, username: 'blaze', w: 8, d: 2, l: 1, wagered: 1.8, profit: 0.9 },
-    { id: 4, username: 'specter', w: 5, d: 8, l: 5, wagered: 4.2, profit: -0.5 },
-  ];
-
   return (
     <div className="min-h-screen bg-background text-foreground p-4 lg:p-6">
       <div className="flex gap-6 max-w-7xl mx-auto">
@@ -110,7 +103,7 @@ const Index = () => {
                 <AvatarFallback>{getInitials(user.email ?? '')}</AvatarFallback>
               </Avatar>
               <div>
-                <SidebarTitle>{user.user_metadata.user_name || 'Player'}</SidebarTitle>
+                <SidebarTitle>{user.user_metadata.full_name || 'Player'}</SidebarTitle>
                 <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             </div>
@@ -146,22 +139,15 @@ const Index = () => {
             </SidebarSection>
             
             <SidebarSection>
-               <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center"><Users className="h-5 w-5 mr-2"/>Leaderboard</h3>
-               <div className="space-y-2 text-sm">
-                 {leaderboardData.map((player, index) => (
-                   <div key={player.id} className="flex items-center justify-between p-2 bg-secondary rounded-md">
-                     <div className="flex items-center gap-2">
-                       <span className="font-semibold text-muted-foreground">{index + 1}.</span>
-                       <p className="font-medium text-foreground">{player.username}</p>
-                     </div>
-                     <div className="flex items-center gap-2">
-                       <Badge variant="default" className="bg-green-500/20 text-green-400 border-none">{player.w}</Badge>
-                       <Badge variant="secondary" className="bg-gray-500/20 text-gray-400 border-none">{player.d}</Badge>
-                       <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-none">{player.l}</Badge>
-                     </div>
-                   </div>
-                 ))}
-               </div>
+              <Link to="/leaderboard" className="w-full">
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-muted-foreground hover:bg-secondary hover:text-foreground"
+                >
+                  <Trophy className="h-5 w-5 mr-2" />
+                  Leaderboard
+                </Button>
+              </Link>
              </SidebarSection>
             
             <SidebarSection>
