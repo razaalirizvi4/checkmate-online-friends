@@ -48,16 +48,6 @@ const Index = () => {
         return;
       }
 
-      // Check if the user is trying to join their own game
-      if (gameSession.white_player_id === user.id) {
-        toast({
-          title: "Cannot Join Own Game",
-          description: "You cannot join a game you created. Create a new game instead.",
-          variant: "destructive"
-        });
-        return;
-      }
-
       // Join the game as black player
       const { error: updateError } = await supabase
         .from('game_sessions')
