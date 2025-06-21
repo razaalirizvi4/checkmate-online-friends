@@ -13,7 +13,7 @@ import { FiUser, FiMail, FiLock } from 'react-icons/fi';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, signInWithDiscord } = useAuth();
   const navigate = useNavigate();
@@ -59,10 +59,10 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
+    if (!fullName.trim()) {
       toast({
-        title: "Username required",
-        description: "Please enter a username",
+        title: "Full name required",
+        description: "Please enter your full name",
         variant: "destructive"
       });
       return;
@@ -70,7 +70,7 @@ const Auth = () => {
     
     setLoading(true);
     
-    const { error } = await signUp(email, password, username);
+    const { error } = await signUp(email, password, fullName);
     
     if (error) {
       toast({
@@ -178,11 +178,11 @@ const Auth = () => {
                     <div className="relative">
                       <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input
-                        id="signup-username"
+                        id="signup-fullname"
                         type="text"
-                        placeholder="Username"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
+                        placeholder="Full Name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
                         required
                         className="bg-secondary border-border text-foreground pl-10"
                       />

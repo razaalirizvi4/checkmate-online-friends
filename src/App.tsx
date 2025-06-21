@@ -8,7 +8,6 @@ import WalletContextProvider from "./contexts/WalletContextProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
-import Leaderboard from "./pages/Leaderboard";
 
 const queryClient = new QueryClient();
 
@@ -23,7 +22,6 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </WalletContextProvider>

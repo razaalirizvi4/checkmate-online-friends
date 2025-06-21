@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MultiplayerChess from '../components/MultiplayerChess';
 import ChessGame from '../components/ChessGame';
+import Leaderboard from '../components/Leaderboard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Users, User, Wallet, Sword, History, Trophy } from 'lucide-react';
 import { useConnection, useWallet } from '@solana/wallet-adapter-react';
@@ -137,25 +138,6 @@ const Index = () => {
                 </div>
               )}
             </SidebarSection>
-            
-            <SidebarSection>
-              <Link to="/leaderboard" className="w-full">
-                <Button
-                  variant="ghost"
-                  className="w-full justify-start text-muted-foreground hover:bg-secondary hover:text-foreground"
-                >
-                  <Trophy className="h-5 w-5 mr-2" />
-                  Leaderboard
-                </Button>
-              </Link>
-             </SidebarSection>
-            
-            <SidebarSection>
-              <h3 className="text-lg font-semibold text-muted-foreground mb-2 flex items-center"><History className="h-5 w-5 mr-2"/>Game History</h3>
-              <div className="space-y-2 text-sm text-muted-foreground p-2 bg-secondary rounded-md">
-                <p>Game history coming soon...</p>
-              </div>
-            </SidebarSection>
           </SidebarContent>
           
           <div className="mt-auto">
@@ -185,10 +167,18 @@ const Index = () => {
           </div>
           
           <Tabs defaultValue="multiplayer" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-secondary p-1 h-12">
+            <TabsList className="grid w-full grid-cols-4 bg-secondary p-1 h-12">
               <TabsTrigger value="multiplayer" className="text-base">
                 <Sword className="h-5 w-5 mr-2" />
                 Multiplayer
+              </TabsTrigger>
+              <TabsTrigger value="leaderboard" className="text-base">
+                <Trophy className="h-5 w-5 mr-2" />
+                Leaderboard
+              </TabsTrigger>
+              <TabsTrigger value="history" className="text-base" disabled>
+                <History className="h-5 w-5 mr-2" />
+                History
               </TabsTrigger>
               <TabsTrigger value="singleplayer" className="text-base">
                 <User className="h-5 w-5 mr-2" />
@@ -200,6 +190,14 @@ const Index = () => {
               <CardContent className="p-0">
                 <TabsContent value="multiplayer" className="mt-0">
                   <MultiplayerChess />
+                </TabsContent>
+                <TabsContent value="leaderboard" className="mt-0">
+                  <Leaderboard />
+                </TabsContent>
+                <TabsContent value="history" className="mt-0">
+                  <div className="text-center p-8 text-muted-foreground">
+                    Game history coming soon...
+                  </div>
                 </TabsContent>
                 <TabsContent value="singleplayer" className="mt-0">
                   <ChessGame />
