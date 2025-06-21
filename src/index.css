@@ -6,44 +6,44 @@
 
 @layer base {
   :root {
-    --background: 0 0% 98%; /* Almost white */
-    --foreground: 20 14.3% 4.1%; /* Dark Gray */
+    --background: 20 20% 12%; /* Dark warm gray */
+    --foreground: 30 90% 95%; /* Off-white text */
 
-    --card: 0 0% 100%;
-    --card-foreground: 20 14.3% 4.1%;
+    --card: 20 20% 16%;
+    --card-foreground: 30 90% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 20 14.3% 4.1%;
+    --popover: 20 20% 10%;
+    --popover-foreground: 30 90% 95%;
 
-    --primary: 24.6 95% 53.1%; /* Orange */
-    --primary-foreground: 60 9.1% 97.8%;
+    --primary: 35 92% 55%; /* Bright Orange */
+    --primary-foreground: 20 20% 12%;
 
-    --secondary: 60 4.8% 95.9%;
-    --secondary-foreground: 24.6 95% 53.1%;
+    --secondary: 20 15% 22%;
+    --secondary-foreground: 30 90% 95%;
 
-    --muted: 60 4.8% 95.9%;
-    --muted-foreground: 25 5.3% 44.7%;
+    --muted: 20 15% 22%;
+    --muted-foreground: 30 20% 70%;
 
-    --accent: 45 95% 58%; /* Yellow */
-    --accent-foreground: 25 5.3% 44.7%;
+    --accent: 45 95% 58%; /* Bright Yellow */
+    --accent-foreground: 20 20% 12%;
 
-    --destructive: 0 84.2% 60.2%; /* Red */
-    --destructive-foreground: 60 9.1% 97.8%;
+    --destructive: 0 84.2% 60.2%; /* Bright Red */
+    --destructive-foreground: 30 90% 95%;
 
-    --border: 20 5.9% 90%;
-    --input: 20 5.9% 90%;
-    --ring: 24.6 95% 53.1%;
+    --border: 20 20% 24%;
+    --input: 20 20% 24%;
+    --ring: 35 92% 55%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 20 14.3% 4.1%;
-    --sidebar-primary: 24.6 95% 53.1%;
-    --sidebar-primary-foreground: 60 9.1% 97.8%;
-    --sidebar-accent: 60 4.8% 95.9%;
-    --sidebar-accent-foreground: 24.6 95% 53.1%;
-    --sidebar-border: 20 5.9% 90%;
-    --sidebar-ring: 24.6 95% 53.1%;
+    --sidebar-background: 20 20% 16%;
+    --sidebar-foreground: 30 90% 95%;
+    --sidebar-primary: 35 92% 55%;
+    --sidebar-primary-foreground: 20 20% 12%;
+    --sidebar-accent: 20 15% 22%;
+    --sidebar-accent-foreground: 30 90% 95%;
+    --sidebar-border: 20 20% 24%;
+    --sidebar-ring: 35 92% 55%;
   }
 }
 
