@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
 interface GameSession {
@@ -771,115 +772,79 @@ const MultiplayerChess = () => {
     );
   }
 
-  if (showLobby || !gameSession) {
+  if (showLobby) {
     return (
       <div className="space-y-6">
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white">Multiplayer Lobby</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={createGame}
-              className="w-full bg-amber-600 hover:bg-amber-700"
-            >
-              Create New Game
-            </Button>
-            <Button
-              onClick={testDatabaseState}
-              className="w-full bg-blue-600 hover:bg-blue-700"
-            >
-              Test Database State
-            </Button>
-            {gameSession && (
-              <div className="text-center text-slate-300">
-                <p>Game created! Share this with a friend or invite them below.</p>
-                <p className="text-sm text-slate-400 mt-2">Game ID: {gameSession.id}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="create" className="w-full">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="create">Create New Game</TabsTrigger>
+            <TabsTrigger value="join">Join Existing Game</TabsTrigger>
+          </TabsList>
 
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white">Join Existing Game</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="joinGameId" className="text-slate-300">Game ID</Label>
-              <Input
-                id="joinGameId"
-                type="text"
-                placeholder="Enter game ID..."
-                value={joiningGameId}
-                onChange={(e) => setJoiningGameId(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    joinGame(joiningGameId);
-                  }
-                }}
-              />
-            </div>
-            <Button
-              onClick={() => joinGame(joiningGameId)}
-              disabled={!joiningGameId.trim()}
-              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600"
-            >
-              Join Game
-            </Button>
-          </CardContent>
-        </Card>
+          <TabsContent value="create">
+            <Card className="bg-transparent border-none">
+              <CardHeader>
+                <CardTitle>Start a New Match</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button onClick={createGame} className="w-full">
+                  Create New Game
+                </Button>
+                <Button onClick={testDatabaseState} variant="outline" className="w-full">
+                  Test Database State
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* Available Games List */}
-        <Card className="bg-slate-800 border-slate-700">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center justify-between">
-              Available Games
-              <Button
-                onClick={fetchAvailableGames}
-                size="sm"
-                variant="outline"
-                className="text-xs"
-              >
-                Refresh
-              </Button>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {availableGames.length === 0 ? (
-              <p className="text-slate-400 text-center">No games available to join</p>
-            ) : (
-              <div className="space-y-2">
-                {availableGames.map((game) => (
-                  <div
-                    key={game.id}
-                    className="flex items-center justify-between p-2 bg-slate-700 rounded"
-                  >
-                    <div className="text-slate-300 text-sm">
-                      <p>Game ID: {game.id}</p>
-                      <p className="text-xs text-slate-400">
-                        Created: {new Date(game.created_at).toLocaleTimeString()}
-                      </p>
-                    </div>
-                    <Button
-                      onClick={() => {
-                        setJoiningGameId(game.id);
-                        joinGame(game.id);
-                      }}
-                      size="sm"
-                      className="bg-green-600 hover:bg-green-700"
-                    >
-                      Join
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          <TabsContent value="join">
+            <Card className="bg-transparent border-none">
+              <CardHeader>
+                <CardTitle>Join by Game ID</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="gameId">Game ID</Label>
+                  <Input
+                    id="gameId"
+                    value={joiningGameId}
+                    onChange={(e) => setJoiningGameId(e.target.value)}
+                    placeholder="Enter game ID..."
+                  />
+                </div>
+                <Button
+                  onClick={() => joinGame(joiningGameId)}
+                  disabled={!joiningGameId}
+                  className="w-full"
+                >
+                  Join Game
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
         
-        <FriendsList onInviteFriend={inviteFriend} />
+        <div>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-2xl font-semibold">Available Games</h3>
+            <Button onClick={fetchAvailableGames} variant="outline">Refresh</Button>
+          </div>
+          <div className="space-y-4">
+            {availableGames.map((game) => (
+              <Card key={game.id} className="bg-secondary/40">
+                <CardContent className="flex justify-between items-center p-4">
+                  <div>
+                    <p className="font-mono text-sm">Game ID: {game.id}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Created: {new Date(game.created_at).toLocaleString()}
+                    </p>
+                  </div>
+                  <Button onClick={() => joinGame(game.id)}>Join</Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
