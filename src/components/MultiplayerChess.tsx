@@ -5,7 +5,7 @@ import ChessBoard from './ChessBoard';
 import GameInfo from './GameInfo';
 import FriendsList from './FriendsList';
 import { initialBoard, ChessPiece, Position, GameState } from '../utils/chessUtils';
-import { isValidMove, makeMove } from '../utils/chessLogic';
+import { isValidMove, makeMove, getValidMovesForPlayer, isKingInCheck } from '../utils/chessLogic';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -718,6 +718,41 @@ const MultiplayerChess = () => {
     }
   };
 
+  // Calculate valid moves for the selected piece
+  const getValidMovesForSelectedPiece = useCallback((): Position[] => {
+    if (!selectedSquare || !gameSession || gameSession.game_status !== 'active') {
+      return [];
+    }
+
+    const piece = board[selectedSquare.row][selectedSquare.col];
+    if (!piece || piece.color !== playerColor) {
+      return [];
+    }
+
+    const validMoves: Position[] = [];
+    
+    // Check all squares on the board
+    for (let row = 0; row < 8; row++) {
+      for (let col = 0; col < 8; col++) {
+        const targetPosition = { row, col };
+        if (isValidMove(board, selectedSquare, targetPosition, piece)) {
+          // Check if this move would put or leave the king in check
+          const newBoard = board.map(row => row.map(piece => piece ? { ...piece } : null));
+          newBoard[targetPosition.row][targetPosition.col] = { ...piece, hasMoved: true };
+          newBoard[selectedSquare.row][selectedSquare.col] = null;
+          
+          // Check if the king would be in check after this move
+          const isInCheck = isKingInCheck(newBoard, piece.color);
+          if (!isInCheck) {
+            validMoves.push(targetPosition);
+          }
+        }
+      }
+    }
+
+    return validMoves;
+  }, [selectedSquare, board, gameSession, playerColor]);
+
   // Check if it's the current player's turn
   const isPlayerTurn = currentPlayer === playerColor;
 
@@ -890,6 +925,7 @@ const MultiplayerChess = () => {
           selectedSquare={selectedSquare}
           onSquareClick={handleSquareClick}
           currentPlayer={currentPlayer}
+          validMoves={getValidMovesForSelectedPiece()}
         />
       </div>
       <div className="w-full lg:w-80">
