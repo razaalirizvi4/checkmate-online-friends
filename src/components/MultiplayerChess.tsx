@@ -342,22 +342,30 @@ const MultiplayerChess = () => {
       let playerColor: 'white' | 'black';
       let updateData: any = {};
 
+      console.log('Current game state:', {
+        white_player_id: existingGame.white_player_id,
+        black_player_id: existingGame.black_player_id
+      });
+
       if (!existingGame.white_player_id && !existingGame.black_player_id) {
-        // First player joins - becomes white
+        // Both players are null - first player becomes white
+        console.log('Both players null - assigning white');
         playerColor = 'white';
         updateData = {
           white_player_id: user.id,
           game_status: 'waiting'
         };
       } else if (existingGame.white_player_id && !existingGame.black_player_id) {
-        // Second player joins - becomes black
+        // White player exists, black is null - second player becomes black
+        console.log('White exists, black null - assigning black');
         playerColor = 'black';
         updateData = {
           black_player_id: user.id,
           game_status: 'active'
         };
       } else if (!existingGame.white_player_id && existingGame.black_player_id) {
-        // Edge case: black player joined first, this player becomes white
+        // Edge case: black player exists, white is null - this player becomes white
+        console.log('Black exists, white null - assigning white');
         playerColor = 'white';
         updateData = {
           white_player_id: user.id,
@@ -372,11 +380,17 @@ const MultiplayerChess = () => {
         return;
       }
 
+      console.log('Update data:', updateData);
+
       // Join the game
-      const { error: updateError } = await supabase
+      const { data: updateResult, error: updateError } = await supabase
         .from('game_sessions')
         .update(updateData)
-        .eq('id', gameId.trim());
+        .eq('id', gameId.trim())
+        .select()
+        .single();
+
+      console.log('Update result:', { updateResult, updateError });
 
       if (updateError) {
         console.error('Update error when joining:', updateError);
@@ -388,21 +402,21 @@ const MultiplayerChess = () => {
         return;
       }
 
+      console.log('Successfully updated game:', updateResult);
+
       // Set up the game session for the joining player
       try {
-        const parsedBoardState = JSON.parse(existingGame.board_state as string) as (ChessPiece | null)[][];
+        const parsedBoardState = JSON.parse(updateResult.board_state as string) as (ChessPiece | null)[][];
         
         setGameSession({
-          ...existingGame,
+          ...updateResult,
           board_state: parsedBoardState,
-          current_turn: existingGame.current_turn as 'white' | 'black',
-          game_status: updateData.game_status,
-          white_player_id: playerColor === 'white' ? user.id : existingGame.white_player_id,
-          black_player_id: playerColor === 'black' ? user.id : existingGame.black_player_id
+          current_turn: updateResult.current_turn as 'white' | 'black',
+          game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
         });
         setBoard(parsedBoardState);
-        setCurrentPlayer(existingGame.current_turn as 'white' | 'black');
-        setMoveHistory(existingGame.move_history || []);
+        setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
+        setMoveHistory(updateResult.move_history || []);
         setPlayerColor(playerColor);
         setShowLobby(false);
         
@@ -456,6 +470,33 @@ const MultiplayerChess = () => {
     fetchAvailableGames();
   }, []);
 
+  // Test function to check database state
+  const testDatabaseState = async () => {
+    try {
+      console.log('Testing database state...');
+      
+      // Check all games
+      const { data: allGames, error: allGamesError } = await supabase
+        .from('game_sessions')
+        .select('*');
+      
+      console.log('All games:', allGames);
+      console.log('All games error:', allGamesError);
+      
+      // Check waiting games
+      const { data: waitingGames, error: waitingError } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('game_status', 'waiting');
+      
+      console.log('Waiting games:', waitingGames);
+      console.log('Waiting games error:', waitingError);
+      
+    } catch (error) {
+      console.error('Test error:', error);
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -477,6 +518,12 @@ const MultiplayerChess = () => {
               className="w-full bg-amber-600 hover:bg-amber-700"
             >
               Create New Game
+            </Button>
+            <Button
+              onClick={testDatabaseState}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              Test Database State
             </Button>
             {gameSession && (
               <div className="text-center text-slate-300">
