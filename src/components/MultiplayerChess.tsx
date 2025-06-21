@@ -75,10 +75,13 @@ const MultiplayerChess = () => {
               parsedBoardState = initialBoard;
             }
             
+            // Check if board actually changed before updating
+            const boardChanged = JSON.stringify(parsedBoardState) !== JSON.stringify(board);
+            
             console.log('Real-time update received:', {
               game_status: updatedSession.game_status,
               current_turn: updatedSession.current_turn,
-              board_changed: JSON.stringify(parsedBoardState) !== JSON.stringify(board),
+              board_changed: boardChanged,
               white_player: updatedSession.white_player_id,
               black_player: updatedSession.black_player_id
             });
@@ -98,7 +101,7 @@ const MultiplayerChess = () => {
             if (updatedSession.game_status === 'active' && 
                 updatedSession.white_player_id && 
                 updatedSession.black_player_id &&
-                JSON.stringify(parsedBoardState) !== JSON.stringify(board)) {
+                boardChanged) {
               console.log('Board updated from real-time subscription');
               
               // Reset loading state since move was received
@@ -596,6 +599,45 @@ const MultiplayerChess = () => {
     }
   };
 
+  // Function to check current game state in database
+  const checkCurrentGameState = async () => {
+    if (!gameSession) {
+      console.log('No active game session');
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameSession.id)
+        .single();
+
+      if (error) {
+        console.error('Error fetching current game:', error);
+        return;
+      }
+
+      console.log('Current game in database:', {
+        id: data.id,
+        game_status: data.game_status,
+        current_turn: data.current_turn,
+        board_state: data.board_state,
+        move_history: data.move_history
+      });
+
+      // Parse and log the board state
+      if (typeof data.board_state === 'string') {
+        const parsedBoard = JSON.parse(data.board_state);
+        console.log('Parsed board state:', parsedBoard);
+      } else {
+        console.log('Board state (object):', data.board_state);
+      }
+    } catch (error) {
+      console.error('Error checking game state:', error);
+    }
+  };
+
   // Check if it's the current player's turn
   const isPlayerTurn = currentPlayer === playerColor;
 
@@ -745,6 +787,14 @@ const MultiplayerChess = () => {
               You are playing as {playerColor === 'white' ? 'White' : 'Black'}
             </p>
           )}
+          <Button
+            onClick={checkCurrentGameState}
+            size="sm"
+            variant="outline"
+            className="mt-2 text-xs"
+          >
+            Check DB State
+          </Button>
         </div>
         
         <ChessBoard
