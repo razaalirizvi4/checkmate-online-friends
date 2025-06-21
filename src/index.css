@@ -6,44 +6,44 @@
 
 @layer base {
   :root {
-    --background: 45 80% 15%; /* Dark mustard yellow */
-    --foreground: 45 30% 95%; /* Very light yellow/off-white */
+    --background: 19 88% 54%; /* Rich Orange */
+    --foreground: 0 0% 100%; /* White */
 
-    --card: 45 80% 18%;
-    --card-foreground: 45 30% 95%;
+    --card: 19 88% 48%; /* Slightly Darker Orange */
+    --card-foreground: 0 0% 100%;
 
-    --popover: 45 80% 12%;
-    --popover-foreground: 45 30% 95%;
+    --popover: 19 88% 45%;
+    --popover-foreground: 0 0% 100%;
 
-    --primary: 35 92% 55%; /* Bright Orange */
-    --primary-foreground: 35 20% 10%;
+    --primary: 48 96% 59%; /* Bright Yellow */
+    --primary-foreground: 26 20% 18%; /* Dark Text on Yellow */
 
-    --secondary: 40 85% 30%; /* Darker orange */
-    --secondary-foreground: 45 30% 95%;
+    --secondary: 19 88% 48%; /* Darker Orange */
+    --secondary-foreground: 0 0% 100%;
 
-    --muted: 40 85% 25%;
-    --muted-foreground: 45 30% 70%;
+    --muted: 19 88% 40%;
+    --muted-foreground: 0 0% 80%;
 
-    --accent: 45 95% 58%; /* Bright Yellow */
-    --accent-foreground: 45 80% 10%;
+    --accent: 48 96% 59%; /* Bright Yellow */
+    --accent-foreground: 26 20% 18%; /* Dark Text on Yellow */
 
-    --destructive: 15 90% 55%; /* Fiery orange for alerts */
-    --destructive-foreground: 15 30% 95%;
+    --destructive: 0 84% 60%; /* Red */
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 45 80% 25%;
-    --input: 45 80% 25%;
-    --ring: 35 92% 55%;
+    --border: 19 88% 60%;
+    --input: 19 88% 48%;
+    --ring: 48 96% 59%; /* Yellow Ring */
 
     --radius: 0.5rem;
 
-    --sidebar-background: 45 80% 18%;
-    --sidebar-foreground: 45 30% 95%;
-    --sidebar-primary: 35 92% 55%;
-    --sidebar-primary-foreground: 35 20% 10%;
-    --sidebar-accent: 40 85% 30%;
-    --sidebar-accent-foreground: 45 30% 95%;
-    --sidebar-border: 45 80% 25%;
-    --sidebar-ring: 35 92% 55%;
+    --sidebar-background: 19 88% 48%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 48 96% 59%;
+    --sidebar-primary-foreground: 26 20% 18%;
+    --sidebar-accent: 19 88% 52%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 19 88% 60%;
+    --sidebar-ring: 48 96% 59%;
   }
 }
 

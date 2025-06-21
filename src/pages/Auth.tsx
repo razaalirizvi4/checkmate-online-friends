@@ -93,20 +93,20 @@ const Auth = () => {
       className="min-h-screen w-full flex items-center justify-center bg-background p-4"
     >
       <div className="relative w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-2xl overflow-hidden border">
-        <div className="hidden md:flex flex-col justify-between p-12 bg-gradient-to-br from-primary to-accent text-primary-foreground">
+        <div className="hidden md:flex flex-col justify-between p-12 bg-accent text-accent-foreground">
           <div>
             <h1 className="text-4xl font-bold mb-4">Welcome to Chess Master</h1>
-            <p className="text-primary-foreground/80">
+            <p>
               Join the ultimate online chess platform. Challenge your friends, climb the ranks, and become a true master of the game.
             </p>
           </div>
-          <p className="text-sm text-primary-foreground/60">&copy; 2025 Chess Master. All rights reserved.</p>
+          <p className="text-sm opacity-80">&copy; 2025 Chess Master. All rights reserved.</p>
         </div>
         
-        <div className="p-8 bg-background">
+        <div className="p-8 bg-card">
           <Card className="w-full bg-transparent border-none shadow-none">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold text-foreground mb-2">Get Started</CardTitle>
+              <CardTitle className="text-3xl font-bold mb-2">Get Started</CardTitle>
               <CardDescription className="text-muted-foreground">
                 Choose your method to sign in or create an account.
               </CardDescription>
@@ -129,7 +129,7 @@ const Auth = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="bg-background border-border text-foreground pl-10"
+                        className="bg-background/50 border-border pl-10"
                       />
                     </div>
                     <div className="relative">
@@ -141,7 +141,7 @@ const Auth = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="bg-background border-border text-foreground pl-10"
+                        className="bg-background/50 border-border pl-10"
                       />
                     </div>
                     <Button 
@@ -184,7 +184,7 @@ const Auth = () => {
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         required
-                        className="bg-background border-border text-foreground pl-10"
+                        className="bg-background/50 border-border pl-10"
                       />
                     </div>
                     <div className="relative">
@@ -196,7 +196,7 @@ const Auth = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="bg-background border-border text-foreground pl-10"
+                        className="bg-background/50 border-border pl-10"
                       />
                     </div>
                     <div className="relative">
@@ -209,7 +209,7 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={6}
-                        className="bg-background border-border text-foreground pl-10"
+                        className="bg-background/50 border-border pl-10"
                       />
                     </div>
                     <Button 

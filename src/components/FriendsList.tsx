@@ -56,7 +56,7 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     if (friendsError) {
       console.error('Error fetching friends:', friendsError);
     } else {
-      setFriends((friendsData as Friendship[]) || []);
+      setFriends(friendsData as any || []);
     }
 
     // Fetch incoming friend requests
