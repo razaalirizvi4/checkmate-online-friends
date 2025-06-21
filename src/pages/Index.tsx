@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -6,14 +6,46 @@ import MultiplayerChess from '../components/MultiplayerChess';
 import ChessGame from '../components/ChessGame';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Users, User, Wallet } from 'lucide-react';
-import { useWallet } from '@solana/wallet-adapter-react';
+import { useConnection, useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { LAMPORTS_PER_SOL } from '@solana/web3.js';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Index = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
-  const { publicKey } = useWallet();
+  const { publicKey, disconnect } = useWallet();
   const { setVisible } = useWalletModal();
+  const { connection } = useConnection();
+  const [balance, setBalance] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!connection || !publicKey) {
+      setBalance(null);
+      return;
+    }
+
+    connection.getAccountInfo(publicKey).then(info => {
+      info && setBalance(info.lamports / LAMPORTS_PER_SOL);
+    });
+
+    const subscriptionId = connection.onAccountChange(
+      publicKey,
+      (accountInfo) => {
+        setBalance(accountInfo.lamports / LAMPORTS_PER_SOL);
+      },
+      "confirmed"
+    );
+
+    return () => {
+      connection.removeAccountChangeListener(subscriptionId);
+    };
+  }, [publicKey, connection]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -57,10 +89,25 @@ const Index = () => {
           
           <div className="flex items-center gap-4">
             {publicKey ? (
-              <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-                <Wallet className="h-4 w-4 mr-2" />
-                {getShortenedPublicKey()}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                    <Wallet className="h-4 w-4 mr-2" />
+                    {getShortenedPublicKey()}
+                    {balance !== null && (
+                      <span className="ml-2 text-xs text-amber-400">
+                        ({balance.toFixed(3)} SOL)
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={disconnect}>
+                    <LogOut className="h-4 w-4 mr-2" />
+                    <span>Disconnect</span>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             ) : (
               <Button
                 onClick={() => setVisible(true)}
