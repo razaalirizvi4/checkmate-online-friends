@@ -41,6 +41,7 @@ const MultiplayerChess = () => {
   const [showLobby, setShowLobby] = useState(true);
   const [joiningGameId, setJoiningGameId] = useState('');
   const [availableGames, setAvailableGames] = useState<any[]>([]);
+  const [isMakingMove, setIsMakingMove] = useState(false);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -74,6 +75,15 @@ const MultiplayerChess = () => {
               parsedBoardState = initialBoard;
             }
             
+            console.log('Real-time update received:', {
+              game_status: updatedSession.game_status,
+              current_turn: updatedSession.current_turn,
+              board_changed: JSON.stringify(parsedBoardState) !== JSON.stringify(board),
+              white_player: updatedSession.white_player_id,
+              black_player: updatedSession.black_player_id
+            });
+            
+            // Always update the game session and board state from real-time updates
             setGameSession({
               ...updatedSession,
               board_state: parsedBoardState,
@@ -90,6 +100,9 @@ const MultiplayerChess = () => {
                 updatedSession.black_player_id &&
                 JSON.stringify(parsedBoardState) !== JSON.stringify(board)) {
               console.log('Board updated from real-time subscription');
+              
+              // Reset loading state since move was received
+              setIsMakingMove(false);
               
               // Determine if current user is in this game
               const isWhitePlayer = updatedSession.white_player_id === user.id;
@@ -227,8 +240,8 @@ const MultiplayerChess = () => {
       setPlayerColor('white'); // Creator becomes white
       setShowLobby(false); // Show the chess board immediately
       
-      toast({
-        title: "Game Created",
+    toast({
+      title: "Game Created",
         description: "Waiting for opponent to join..."
       });
       return { data, error: null };
@@ -278,7 +291,7 @@ const MultiplayerChess = () => {
 
   const handleSquareClick = useCallback((position: Position) => {
     console.log('Square clicked:', position);
-    console.log('Game state:', { gameSession, gameState, currentPlayer, playerColor });
+    console.log('Game state:', { gameSession, gameState, currentPlayer, playerColor, isMakingMove });
     
     if (!gameSession || gameSession.game_status !== 'active') {
       console.log('Game not active');
@@ -290,22 +303,22 @@ const MultiplayerChess = () => {
       return;
     }
 
+    if (isMakingMove) {
+      console.log('Already making a move, please wait');
+      return;
+    }
+
     if (selectedSquare) {
       const piece = board[selectedSquare.row][selectedSquare.col];
       
       if (piece && piece.color === currentPlayer) {
         if (isValidMove(board, selectedSquare, position, piece)) {
           console.log('Valid move, making move...');
+          setIsMakingMove(true);
           const result = makeMove(board, selectedSquare, position);
           
-          // Update local state immediately for responsiveness
-          setBoard(result.newBoard);
-          if (result.capturedPiece) {
-            setCapturedPieces(prev => ({
-              ...prev,
-              [result.capturedPiece!.color]: [...prev[result.capturedPiece!.color], result.capturedPiece!]
-            }));
-          }
+          // Don't update local state immediately - wait for real-time update
+          // This prevents conflicts between local and remote state
           
           const newTurn = currentPlayer === 'white' ? 'black' : 'white';
           const newMoveHistory = [...moveHistory, result.moveNotation];
@@ -315,12 +328,6 @@ const MultiplayerChess = () => {
             current_turn: newTurn,
             move_history: newMoveHistory
           });
-          
-          // Update local state immediately for responsiveness
-          setCurrentPlayer(newTurn);
-          setMoveHistory(newMoveHistory);
-          
-          console.log('Turn switched from', currentPlayer, 'to', newTurn);
           
           // Update the game session in Supabase
           supabase
@@ -339,15 +346,19 @@ const MultiplayerChess = () => {
                   description: "Failed to make move",
                   variant: "destructive"
                 });
+                setIsMakingMove(false);
               } else {
                 console.log('Move successfully updated in database');
+                // Clear selected square after successful database update
+                setSelectedSquare(null);
+                // Don't reset isMakingMove here - let real-time update handle it
               }
             });
         } else {
           console.log('Invalid move');
+          setSelectedSquare(null);
         }
       }
-      setSelectedSquare(null);
     } else {
       const piece = board[position.row][position.col];
       if (piece && piece.color === currentPlayer) {
@@ -357,7 +368,7 @@ const MultiplayerChess = () => {
         console.log('No valid piece to select');
       }
     }
-  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory]);
+  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove]);
 
   // Function to join an existing game
   const joinGame = async (gameId: string) => {
