@@ -84,6 +84,8 @@ const MultiplayerChess = () => {
   const createGame = async () => {
     if (!user) return;
 
+    console.log('Creating new game for user:', user.id);
+
     const { data, error } = await supabase
       .from('game_sessions')
       .insert({
@@ -95,7 +97,10 @@ const MultiplayerChess = () => {
       .select()
       .single();
 
+    console.log('Game creation result:', { data, error });
+
     if (error) {
+      console.error('Game creation error:', error);
       toast({
         title: "Error",
         description: "Failed to create game",
@@ -103,6 +108,8 @@ const MultiplayerChess = () => {
       });
       return { data: null, error };
     }
+
+    console.log('Game created successfully with ID:', data.id);
 
     setGameSession({
       ...data,

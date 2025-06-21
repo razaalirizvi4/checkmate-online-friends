@@ -31,18 +31,40 @@ const Index = () => {
     setJoiningGame(true);
     
     try {
+      console.log('Attempting to join game with ID:', gameId.trim());
+      
       // First, check if the game exists and is waiting for players
       const { data: gameSession, error: fetchError } = await supabase
         .from('game_sessions')
         .select('*')
         .eq('id', gameId.trim())
-        .eq('game_status', 'waiting')
         .single();
 
-      if (fetchError || !gameSession) {
+      console.log('Fetch result:', { gameSession, fetchError });
+
+      if (fetchError) {
+        console.error('Fetch error:', fetchError);
         toast({
           title: "Game Not Found",
-          description: "Game ID is invalid or the game is not available to join.",
+          description: `Error: ${fetchError.message}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!gameSession) {
+        toast({
+          title: "Game Not Found",
+          description: "No game found with that ID.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (gameSession.game_status !== 'waiting') {
+        toast({
+          title: "Game Not Available",
+          description: `Game status is: ${gameSession.game_status}. Only waiting games can be joined.`,
           variant: "destructive"
         });
         return;
@@ -58,9 +80,10 @@ const Index = () => {
         .eq('id', gameId.trim());
 
       if (updateError) {
+        console.error('Update error:', updateError);
         toast({
           title: "Error",
-          description: "Failed to join the game. Please try again.",
+          description: `Failed to join the game: ${updateError.message}`,
           variant: "destructive"
         });
         return;
@@ -75,6 +98,7 @@ const Index = () => {
       setGameId('');
       
     } catch (error) {
+      console.error('Unexpected error:', error);
       toast({
         title: "Error",
         description: "An unexpected error occurred. Please try again.",
