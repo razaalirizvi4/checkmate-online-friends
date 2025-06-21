@@ -136,7 +136,7 @@ const MultiplayerChess = () => {
     const { data, error } = await supabase
       .from('game_sessions')
       .insert({
-        white_player_id: null, // Start with no players
+        white_player_id: user.id, // Creator becomes white player
         black_player_id: null,
         board_state: JSON.stringify(initialBoard),
         current_turn: 'white',
@@ -168,11 +168,15 @@ const MultiplayerChess = () => {
         current_turn: data.current_turn as 'white' | 'black',
         game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
       });
-      setPlayerColor(null); // No color assigned yet
-      setShowLobby(true);
+      setBoard(parsedBoardState);
+      setCurrentPlayer(data.current_turn as 'white' | 'black');
+      setMoveHistory(data.move_history || []);
+      setPlayerColor('white'); // Creator becomes white
+      setShowLobby(false); // Show the chess board immediately
+      
       toast({
         title: "Game Created",
-        description: "Waiting for players to join..."
+        description: "Waiting for opponent to join..."
       });
       return { data, error: null };
     } catch (error) {
@@ -347,28 +351,12 @@ const MultiplayerChess = () => {
         black_player_id: existingGame.black_player_id
       });
 
-      if (!existingGame.white_player_id && !existingGame.black_player_id) {
-        // Both players are null - first player becomes white
-        console.log('Both players null - assigning white');
-        playerColor = 'white';
-        updateData = {
-          white_player_id: user.id,
-          game_status: 'waiting'
-        };
-      } else if (existingGame.white_player_id && !existingGame.black_player_id) {
-        // White player exists, black is null - second player becomes black
-        console.log('White exists, black null - assigning black');
+      if (!existingGame.black_player_id) {
+        // Black player slot is empty - joiner becomes black
+        console.log('Black player slot empty - assigning black');
         playerColor = 'black';
         updateData = {
           black_player_id: user.id,
-          game_status: 'active'
-        };
-      } else if (!existingGame.white_player_id && existingGame.black_player_id) {
-        // Edge case: black player exists, white is null - this player becomes white
-        console.log('Black exists, white null - assigning white');
-        playerColor = 'white';
-        updateData = {
-          white_player_id: user.id,
           game_status: 'active'
         };
       } else {
@@ -422,7 +410,7 @@ const MultiplayerChess = () => {
         
         toast({
           title: "Success!",
-          description: `You have joined the game as ${playerColor === 'white' ? 'White' : 'Black'}!`,
+          description: `You have joined the game as Black!`,
         });
       } catch (error) {
         console.error('Error parsing board state when joining:', error);
