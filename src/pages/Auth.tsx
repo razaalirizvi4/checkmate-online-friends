@@ -93,27 +93,27 @@ const Auth = () => {
       className="min-h-screen w-full flex items-center justify-center bg-background p-4"
     >
       <div className="relative w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-2xl overflow-hidden">
-        <div className="hidden md:flex flex-col justify-between p-12 bg-slate-900 bg-opacity-80 text-white">
+        <div className="hidden md:flex flex-col justify-between p-12 bg-secondary text-foreground">
           <div>
             <h1 className="text-4xl font-bold mb-4">Welcome to Chess Master</h1>
-            <p className="text-slate-300">
+            <p className="text-muted-foreground">
               Join the ultimate online chess platform. Challenge your friends, climb the ranks, and become a true master of the game.
             </p>
           </div>
-          <p className="text-sm text-slate-400">&copy; 2025 Chess Master. All rights reserved.</p>
+          <p className="text-sm text-muted-foreground">&copy; 2025 Chess Master. All rights reserved.</p>
         </div>
         
-        <div className="p-8 backdrop-blur-md bg-slate-800/60">
+        <div className="p-8 backdrop-blur-md bg-background/60">
           <Card className="w-full bg-transparent border-none shadow-none">
             <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold text-white mb-2">Get Started</CardTitle>
-              <CardDescription className="text-slate-300">
+              <CardTitle className="text-3xl font-bold text-foreground mb-2">Get Started</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Choose your method to sign in or create an account.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <Tabs defaultValue="signin" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-2 bg-slate-900/80 border border-slate-700">
+                <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border">
                   <TabsTrigger value="signin">Sign In</TabsTrigger>
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                 </TabsList>
@@ -121,7 +121,7 @@ const Auth = () => {
                 <TabsContent value="signin">
                   <form onSubmit={handleSignIn} className="space-y-4">
                     <div className="relative">
-                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="signin-email"
                         type="email"
@@ -129,11 +129,11 @@ const Auth = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                        className="bg-secondary border-border text-foreground pl-10"
                       />
                     </div>
                     <div className="relative">
-                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="signin-password"
                         type="password"
@@ -141,12 +141,12 @@ const Auth = () => {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         required
-                        className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                        className="bg-secondary border-border text-foreground pl-10"
                       />
                     </div>
                     <Button 
                       type="submit" 
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3"
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3"
                       disabled={loading}
                     >
                       {loading ? 'Signing In...' : 'Sign In'}
@@ -154,10 +154,10 @@ const Auth = () => {
                   </form>
                   <div className="relative my-6">
                     <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-slate-700" />
+                      <span className="w-full border-t border-border" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-slate-800/60 px-2 text-slate-400">
+                      <span className="bg-background/60 px-2 text-muted-foreground">
                         Or continue with
                       </span>
                     </div>
@@ -166,7 +166,7 @@ const Auth = () => {
                     onClick={handleDiscordSignIn}
                     disabled={loading}
                     variant="outline"
-                    className="w-full border-slate-600 text-white hover:bg-slate-700/50 flex items-center gap-2 bg-transparent py-3"
+                    className="w-full flex items-center gap-2 py-3"
                   >
                     <FaDiscord className="h-5 w-5" />
                     Discord
@@ -176,7 +176,7 @@ const Auth = () => {
                 <TabsContent value="signup">
                   <form onSubmit={handleSignUp} className="space-y-4">
                     <div className="relative">
-                      <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="signup-username"
                         type="text"
@@ -184,11 +184,11 @@ const Auth = () => {
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                         required
-                        className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                        className="bg-secondary border-border text-foreground pl-10"
                       />
                     </div>
                     <div className="relative">
-                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="signup-email"
                         type="email"
@@ -196,11 +196,11 @@ const Auth = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         required
-                        className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                        className="bg-secondary border-border text-foreground pl-10"
                       />
                     </div>
                     <div className="relative">
-                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                       <Input
                         id="signup-password"
                         type="password"
@@ -209,12 +209,12 @@ const Auth = () => {
                         onChange={(e) => setPassword(e.target.value)}
                         required
                         minLength={6}
-                        className="bg-slate-700/50 border-slate-600 text-white pl-10"
+                        className="bg-secondary border-border text-foreground pl-10"
                       />
                     </div>
                     <Button 
                       type="submit" 
-                      className="w-full bg-amber-600 hover:bg-amber-700 text-white font-bold py-3"
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3"
                       disabled={loading}
                     >
                       {loading ? 'Creating Account...' : 'Sign Up'}

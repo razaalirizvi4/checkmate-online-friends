@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/sidebar';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 
 const Index = () => {
   const { user, signOut, loading } = useAuth();
@@ -91,8 +92,15 @@ const Index = () => {
     return parts[0].slice(0, 2).toUpperCase();
   }
 
+  const leaderboardData = [
+    { id: 1, username: 'cypher', w: 12, d: 3, l: 2, wagered: 2.5, profit: 1.2 },
+    { id: 2, username: 'vortex', w: 10, d: 5, l: 4, wagered: 3.1, profit: 0.8 },
+    { id: 3, username: 'blaze', w: 8, d: 2, l: 1, wagered: 1.8, profit: 0.9 },
+    { id: 4, username: 'specter', w: 5, d: 8, l: 5, wagered: 4.2, profit: -0.5 },
+  ];
+
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4 lg:p-6">
+    <div className="min-h-screen bg-background text-foreground p-4 lg:p-6">
       <div className="flex gap-6 max-w-7xl mx-auto">
         <Sidebar className="hidden lg:flex flex-col">
           <SidebarHeader>
@@ -103,7 +111,7 @@ const Index = () => {
               </Avatar>
               <div>
                 <SidebarTitle>{user.user_metadata.user_name || 'Player'}</SidebarTitle>
-                <p className="text-sm text-slate-400">{user.email}</p>
+                <p className="text-sm text-muted-foreground">{user.email}</p>
               </div>
             </div>
           </SidebarHeader>
@@ -112,23 +120,23 @@ const Index = () => {
               {!publicKey ? (
                 <Button
                   onClick={() => setVisible(true)}
-                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  className="w-full bg-primary text-primary-foreground hover:bg-primary/90"
                 >
                   <Wallet className="h-4 w-4 mr-2" />
                   Connect Wallet
                 </Button>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center text-sm p-2 bg-slate-700/50 rounded-md">
-                    <span className="text-slate-300">{getShortenedPublicKey()}</span>
-                    <span className="font-mono text-amber-400">
+                  <div className="flex justify-between items-center text-sm p-2 bg-secondary rounded-md">
+                    <span className="text-muted-foreground">{getShortenedPublicKey()}</span>
+                    <span className="font-mono text-accent">
                       {balance !== null ? `${balance.toFixed(4)} SOL` : '...'}
                     </span>
                   </div>
                   <Button
                     onClick={disconnect}
                     variant="outline"
-                    className="w-full border-slate-600 text-slate-300 hover:bg-slate-700/80"
+                    className="w-full"
                   >
                     <LogOut className="h-4 w-4 mr-2" />
                     Disconnect Wallet
@@ -138,17 +146,27 @@ const Index = () => {
             </SidebarSection>
             
             <SidebarSection>
-              {/* Friends List Placeholder */}
-              <h3 className="text-lg font-semibold text-slate-300 mb-2 flex items-center"><Users className="h-5 w-5 mr-2"/>Friends</h3>
-              <div className="space-y-2 text-sm text-slate-400 p-2 bg-slate-700/50 rounded-md">
-                <p>Friends list coming soon...</p>
-              </div>
-            </SidebarSection>
+               <h3 className="text-lg font-semibold text-foreground mb-2 flex items-center"><Users className="h-5 w-5 mr-2"/>Leaderboard</h3>
+               <div className="space-y-2 text-sm">
+                 {leaderboardData.map((player, index) => (
+                   <div key={player.id} className="flex items-center justify-between p-2 bg-secondary rounded-md">
+                     <div className="flex items-center gap-2">
+                       <span className="font-semibold text-muted-foreground">{index + 1}.</span>
+                       <p className="font-medium text-foreground">{player.username}</p>
+                     </div>
+                     <div className="flex items-center gap-2">
+                       <Badge variant="default" className="bg-green-500/20 text-green-400 border-none">{player.w}</Badge>
+                       <Badge variant="secondary" className="bg-gray-500/20 text-gray-400 border-none">{player.d}</Badge>
+                       <Badge variant="destructive" className="bg-red-500/20 text-red-400 border-none">{player.l}</Badge>
+                     </div>
+                   </div>
+                 ))}
+               </div>
+             </SidebarSection>
             
             <SidebarSection>
-              {/* Game History Placeholder */}
-              <h3 className="text-lg font-semibold text-slate-300 mb-2 flex items-center"><History className="h-5 w-5 mr-2"/>Game History</h3>
-              <div className="space-y-2 text-sm text-slate-400 p-2 bg-slate-700/50 rounded-md">
+              <h3 className="text-lg font-semibold text-muted-foreground mb-2 flex items-center"><History className="h-5 w-5 mr-2"/>Game History</h3>
+              <div className="space-y-2 text-sm text-muted-foreground p-2 bg-secondary rounded-md">
                 <p>Game history coming soon...</p>
               </div>
             </SidebarSection>
@@ -158,7 +176,7 @@ const Index = () => {
             <Button
               onClick={handleSignOut}
               variant="ghost"
-              className="w-full justify-start text-slate-400 hover:bg-slate-700/80 hover:text-white"
+              className="w-full justify-start text-muted-foreground hover:bg-secondary hover:text-foreground"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Sign Out
@@ -168,20 +186,20 @@ const Index = () => {
 
         <main className="flex-1 min-w-0">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-4xl font-bold text-white bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
               Chess Master
             </h1>
             <Button
               onClick={handleSignOut}
               variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700 lg:hidden"
+              className="lg:hidden"
             >
               <LogOut className="h-4 w-4" />
             </Button>
           </div>
           
           <Tabs defaultValue="multiplayer" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 bg-slate-800/60 p-1 h-12">
+            <TabsList className="grid w-full grid-cols-2 bg-secondary p-1 h-12">
               <TabsTrigger value="multiplayer" className="text-base">
                 <Sword className="h-5 w-5 mr-2" />
                 Multiplayer
