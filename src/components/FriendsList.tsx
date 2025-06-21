@@ -192,9 +192,9 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
   };
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="flex items-center gap-2">
           <Users className="h-5 w-5" />
           Friends
         </CardTitle>
@@ -205,13 +205,12 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
             placeholder="Enter username"
             value={searchUsername}
             onChange={(e) => setSearchUsername(e.target.value)}
-            className="bg-slate-700 border-slate-600 text-white"
             onKeyPress={(e) => e.key === 'Enter' && sendFriendRequest()}
           />
           <Button
             onClick={sendFriendRequest}
             disabled={loading || !searchUsername.trim()}
-            className="bg-amber-600 hover:bg-amber-700 px-3"
+            className="px-3"
           >
             <UserPlus className="h-4 w-4" />
           </Button>
@@ -220,59 +219,61 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
         <div className="space-y-2">
           {friendRequests.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-slate-300 font-semibold text-sm">Friend Requests</h4>
+              <h4 className="text-muted-foreground font-semibold text-sm">Friend Requests</h4>
               {friendRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between p-2 bg-slate-700/50 rounded">
+                <div key={request.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded">
                   <div>
-                    <p className="text-white font-medium">{request.requester_profile.display_name}</p>
-                    <p className="text-slate-400 text-sm">@{request.requester_profile.username}</p>
+                    <p className="font-medium">{request.requester_profile.display_name}</p>
+                    <p className="text-muted-foreground text-sm">@{request.requester_profile.username}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => acceptFriendRequest(request.id)}
-                      className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-auto"
+                      variant="default"
+                      size="sm"
                     >
                       Accept
                     </Button>
                     <Button
                       onClick={() => declineFriendRequest(request.id)}
-                      className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1 h-auto"
+                      variant="destructive"
+                      size="sm"
                     >
                       Decline
                     </Button>
                   </div>
                 </div>
               ))}
-              <hr className="border-slate-600" />
+              <hr className="border-border" />
             </div>
           )}
 
           {friends.length === 0 ? (
-            <p className="text-slate-400 text-sm">No friends yet. Add some friends to play with!</p>
+            <p className="text-muted-foreground text-sm text-center">No friends yet. Add some!</p>
           ) : (
-            friends.map((friendship) => {
-              const friend = user?.id === friendship.requester.id
-                ? friendship.addressee
-                : friendship.requester;
-
-              if (!friend) return null;
-
-              return (
-                <div key={friendship.id} className="flex items-center justify-between p-2 bg-slate-700 rounded">
-                  <div>
-                    <p className="text-white font-medium">{friend.display_name}</p>
-                    <p className="text-slate-400 text-sm">@{friend.username}</p>
+            <div className="space-y-2">
+              {friends.map((friendship) => {
+                const friendProfile = friendship.requester.id === user?.id
+                  ? friendship.addressee
+                  : friendship.requester;
+                return (
+                  <div key={friendship.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded">
+                    <div>
+                      <p className="font-medium">{friendProfile.display_name}</p>
+                      <p className="text-muted-foreground text-sm">@{friendProfile.username}</p>
+                    </div>
+                    <Button
+                      onClick={() => onInviteFriend(friendProfile.id)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Invite
+                    </Button>
                   </div>
-                  <Button
-                    onClick={() => onInviteFriend(friend.id)}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    <Play className="h-4 w-4 mr-1" />
-                    Invite
-                  </Button>
-                </div>
-              );
-            })
+                );
+              })}
+            </div>
           )}
         </div>
       </CardContent>
