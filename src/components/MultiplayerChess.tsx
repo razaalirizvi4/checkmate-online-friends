@@ -376,8 +376,30 @@ const MultiplayerChess = () => {
           console.log('Updating database with move:', {
             board_state: result.newBoard,
             current_turn: newTurn,
-            move_history: newMoveHistory
+            move_history: newMoveHistory,
+            game_state: result.gameState
           });
+          
+          // Show game state notifications
+          if (result.isCheckmate) {
+            toast({
+              title: "Checkmate!",
+              description: `${currentPlayer === 'white' ? 'White' : 'Black'} wins!`,
+              variant: "default"
+            });
+          } else if (result.isStalemate) {
+            toast({
+              title: "Stalemate!",
+              description: "The game is a draw.",
+              variant: "default"
+            });
+          } else if (result.isCheck) {
+            toast({
+              title: "Check!",
+              description: `${newTurn === 'white' ? 'White' : 'Black'} is in check!`,
+              variant: "default"
+            });
+          }
           
           // Update the game session in Supabase
           supabase
@@ -386,6 +408,8 @@ const MultiplayerChess = () => {
               board_state: JSON.stringify(result.newBoard),
               current_turn: newTurn,
               move_history: newMoveHistory,
+              game_status: result.gameState === 'checkmate' ? 'completed' : 'active',
+              winner: result.gameState === 'checkmate' ? user.id : null,
               updated_at: new Date().toISOString() // Force update timestamp
             })
             .eq('id', gameSession.id)
