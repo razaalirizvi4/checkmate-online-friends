@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface GameSession {
   id: string;
@@ -314,6 +315,12 @@ const MultiplayerChess = () => {
             current_turn: newTurn,
             move_history: newMoveHistory
           });
+          
+          // Update local state immediately for responsiveness
+          setCurrentPlayer(newTurn);
+          setMoveHistory(newMoveHistory);
+          
+          console.log('Turn switched from', currentPlayer, 'to', newTurn);
           
           // Update the game session in Supabase
           supabase
@@ -712,19 +719,29 @@ const MultiplayerChess = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
       <div className="flex-shrink-0">
+        {/* Turn Indicator */}
+        <div className="mb-4 text-center">
+          <div className={cn(
+            "inline-block px-6 py-3 rounded-lg font-bold text-lg shadow-lg",
+            currentPlayer === 'white' 
+              ? "bg-white text-gray-900 border-2 border-gray-300" 
+              : "bg-gray-900 text-white border-2 border-gray-600"
+          )}>
+            {currentPlayer === 'white' ? "♔ White's Turn" : "♚ Black's Turn"}
+          </div>
+          {playerColor && (
+            <p className="text-slate-300 mt-2 text-sm">
+              You are playing as {playerColor === 'white' ? 'White' : 'Black'}
+            </p>
+          )}
+        </div>
+        
         <ChessBoard
           board={board}
           selectedSquare={selectedSquare}
           onSquareClick={handleSquareClick}
           currentPlayer={currentPlayer}
         />
-        {playerColor && (
-          <div className="text-center mt-4">
-            <p className="text-white">
-              You are playing as {playerColor === 'white' ? 'White' : 'Black'}
-            </p>
-          </div>
-        )}
       </div>
       <div className="w-full lg:w-80">
         <GameInfo
