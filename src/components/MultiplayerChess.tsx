@@ -46,6 +46,16 @@ const MultiplayerChess = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Add debugging for board state changes
+  useEffect(() => {
+    console.log('Board state changed:', board);
+  }, [board]);
+
+  // Add debugging for current player changes
+  useEffect(() => {
+    console.log('Current player changed:', currentPlayer);
+  }, [currentPlayer]);
+
   useEffect(() => {
     if (!gameSession) return;
 
@@ -62,6 +72,14 @@ const MultiplayerChess = () => {
         (payload) => {
           const updatedSession = payload.new as any;
           
+          console.log('Real-time update received:', {
+            game_status: updatedSession.game_status,
+            current_turn: updatedSession.current_turn,
+            white_player: updatedSession.white_player_id,
+            black_player: updatedSession.black_player_id,
+            board_state_type: typeof updatedSession.board_state
+          });
+          
           try {
             // Handle board state parsing - it might be an object or JSON string
             let parsedBoardState: (ChessPiece | null)[][];
@@ -75,51 +93,53 @@ const MultiplayerChess = () => {
               parsedBoardState = initialBoard;
             }
             
-            // Check if board actually changed before updating
-            const boardChanged = JSON.stringify(parsedBoardState) !== JSON.stringify(board);
+            console.log('Parsed board state:', parsedBoardState);
+            console.log('Current board state before update:', board);
             
-            console.log('Real-time update received:', {
-              game_status: updatedSession.game_status,
-              current_turn: updatedSession.current_turn,
-              board_changed: boardChanged,
-              white_player: updatedSession.white_player_id,
-              black_player: updatedSession.black_player_id
-            });
+            // Check if this update is actually newer (has more moves)
+            const currentMoveCount = moveHistory.length;
+            const newMoveCount = updatedSession.move_history?.length || 0;
             
-            // Always update the game session and board state from real-time updates
-            setGameSession({
-              ...updatedSession,
-              board_state: parsedBoardState,
-              current_turn: updatedSession.current_turn as 'white' | 'black',
-              game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-            });
-            setBoard(parsedBoardState);
-            setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
-            setMoveHistory(updatedSession.move_history || []);
+            if (newMoveCount >= currentMoveCount) {
+              // Always update the game session and board state from real-time updates
+              setGameSession(prevSession => ({
+                ...prevSession,
+                ...updatedSession,
+                board_state: parsedBoardState,
+                current_turn: updatedSession.current_turn as 'white' | 'black',
+                game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+              }));
+              
+              // Always update the board state
+              setBoard(parsedBoardState);
+              setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
+              setMoveHistory(updatedSession.move_history || []);
+              
+              console.log('Board state updated to:', parsedBoardState);
+            } else {
+              console.log('Ignoring older board state update');
+            }
             
-            // Check if this is a move update (board changed but game is active)
-            if (updatedSession.game_status === 'active' && 
-                updatedSession.white_player_id && 
-                updatedSession.black_player_id &&
-                boardChanged) {
-              console.log('Board updated from real-time subscription');
+            // Reset loading state since we received an update
+            setIsMakingMove(false);
+            
+            // Determine if current user is in this game
+            const isWhitePlayer = updatedSession.white_player_id === user.id;
+            const isBlackPlayer = updatedSession.black_player_id === user.id;
+            
+            if (isWhitePlayer || isBlackPlayer) {
+              // Set player color if not already set
+              if (!playerColor) {
+                setPlayerColor(isWhitePlayer ? 'white' : 'black');
+              }
               
-              // Reset loading state since move was received
-              setIsMakingMove(false);
-              
-              // Determine if current user is in this game
-              const isWhitePlayer = updatedSession.white_player_id === user.id;
-              const isBlackPlayer = updatedSession.black_player_id === user.id;
-              
-              if (isWhitePlayer || isBlackPlayer) {
-                // Set player color if not already set
-                if (!playerColor) {
-                  setPlayerColor(isWhitePlayer ? 'white' : 'black');
-                }
+              // Show appropriate notifications based on game status
+              if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
+                setShowLobby(false);
                 
                 // Show turn change notification
                 const newTurn = updatedSession.current_turn as 'white' | 'black';
-                if (newTurn === playerColor) {
+                if (newTurn === (isWhitePlayer ? 'white' : 'black')) {
                   toast({
                     title: "Your Turn!",
                     description: "It's your turn to move.",
@@ -130,46 +150,12 @@ const MultiplayerChess = () => {
                     description: "Waiting for opponent to move...",
                   });
                 }
+              } else if (updatedSession.game_status === 'waiting') {
+                toast({
+                  title: "Joined Game!",
+                  description: `You joined as ${isWhitePlayer ? 'White' : 'Black'}. Waiting for opponent...`,
+                });
               }
-            } else if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
-              setShowLobby(false);
-              
-              // Determine if current user is in this game
-              const isWhitePlayer = updatedSession.white_player_id === user.id;
-              const isBlackPlayer = updatedSession.black_player_id === user.id;
-              
-              if (isWhitePlayer || isBlackPlayer) {
-                // Set player color if not already set
-                if (!playerColor) {
-                  setPlayerColor(isWhitePlayer ? 'white' : 'black');
-                }
-                
-                // Show game started message
-                if (isWhitePlayer) {
-                  toast({
-                    title: "Game Started!",
-                    description: "Your opponent has joined. Good luck!",
-                  });
-                } else {
-                  toast({
-                    title: "Game Started!",
-                    description: "You have joined the game. Good luck!",
-                  });
-                }
-              }
-            } else if (updatedSession.game_status === 'waiting' && (updatedSession.white_player_id === user.id || updatedSession.black_player_id === user.id)) {
-              // Player has joined but game is still waiting for second player
-              const isWhitePlayer = updatedSession.white_player_id === user.id;
-              const isBlackPlayer = updatedSession.black_player_id === user.id;
-              
-              if (!playerColor) {
-                setPlayerColor(isWhitePlayer ? 'white' : 'black');
-              }
-              
-              toast({
-                title: "Joined Game!",
-                description: `You joined as ${isWhitePlayer ? 'White' : 'Black'}. Waiting for opponent...`,
-              });
             }
           } catch (error) {
             console.error('Error parsing board state:', error);
@@ -185,7 +171,7 @@ const MultiplayerChess = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameSession]);
+  }, [gameSession, user?.id, playerColor]);
 
   const createGame = async () => {
     if (!user) return;
@@ -320,8 +306,11 @@ const MultiplayerChess = () => {
           setIsMakingMove(true);
           const result = makeMove(board, selectedSquare, position);
           
-          // Don't update local state immediately - wait for real-time update
-          // This prevents conflicts between local and remote state
+          // Update local state immediately for better UX
+          setBoard(result.newBoard);
+          setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
+          setMoveHistory([...moveHistory, result.moveNotation]);
+          setSelectedSquare(null);
           
           const newTurn = currentPlayer === 'white' ? 'black' : 'white';
           const newMoveHistory = [...moveHistory, result.moveNotation];
@@ -349,12 +338,14 @@ const MultiplayerChess = () => {
                   description: "Failed to make move",
                   variant: "destructive"
                 });
+                // Revert local state if database update failed
+                setBoard(board);
+                setCurrentPlayer(currentPlayer);
+                setMoveHistory(moveHistory);
                 setIsMakingMove(false);
               } else {
                 console.log('Move successfully updated in database');
-                // Clear selected square after successful database update
-                setSelectedSquare(null);
-                // Don't reset isMakingMove here - let real-time update handle it
+                // Real-time update will handle the final state sync
               }
             });
         } else {
