@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -20,6 +19,8 @@ interface GameSession {
   game_status: 'waiting' | 'active' | 'completed' | 'abandoned';
   winner: string | null;
   move_history: string[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 const MultiplayerChess = () => {
@@ -53,11 +54,16 @@ const MultiplayerChess = () => {
           filter: `id=eq.${gameSession.id}`
         },
         (payload) => {
-          const updatedSession = payload.new as GameSession;
-          setGameSession(updatedSession);
-          setBoard(updatedSession.board_state);
-          setCurrentPlayer(updatedSession.current_turn);
-          setMoveHistory(updatedSession.move_history);
+          const updatedSession = payload.new as any;
+          setGameSession({
+            ...updatedSession,
+            board_state: JSON.parse(updatedSession.board_state as string) as (ChessPiece | null)[][],
+            current_turn: updatedSession.current_turn as 'white' | 'black',
+            game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+          });
+          setBoard(JSON.parse(updatedSession.board_state as string) as (ChessPiece | null)[][]);
+          setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
+          setMoveHistory(updatedSession.move_history || []);
           
           if (updatedSession.game_status === 'active' && updatedSession.black_player_id) {
             setShowLobby(false);
@@ -82,7 +88,7 @@ const MultiplayerChess = () => {
       .from('game_sessions')
       .insert({
         white_player_id: user.id,
-        board_state: initialBoard,
+        board_state: JSON.stringify(initialBoard),
         current_turn: 'white',
         game_status: 'waiting'
       })
@@ -98,7 +104,12 @@ const MultiplayerChess = () => {
       return;
     }
 
-    setGameSession(data);
+    setGameSession({
+      ...data,
+      board_state: JSON.parse(data.board_state as string) as (ChessPiece | null)[][],
+      current_turn: data.current_turn as 'white' | 'black',
+      game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+    });
     setPlayerColor('white');
     setShowLobby(true);
     toast({
@@ -160,7 +171,7 @@ const MultiplayerChess = () => {
           supabase
             .from('game_sessions')
             .update({
-              board_state: result.newBoard,
+              board_state: JSON.stringify(result.newBoard),
               current_turn: newTurn,
               move_history: [...moveHistory, result.moveNotation]
             })
