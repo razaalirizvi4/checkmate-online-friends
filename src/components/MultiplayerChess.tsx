@@ -99,6 +99,19 @@ const MultiplayerChess = () => {
                   });
                 }
               }
+            } else if (updatedSession.game_status === 'waiting' && (updatedSession.white_player_id === user.id || updatedSession.black_player_id === user.id)) {
+              // Player has joined but game is still waiting for second player
+              const isWhitePlayer = updatedSession.white_player_id === user.id;
+              const isBlackPlayer = updatedSession.black_player_id === user.id;
+              
+              if (!playerColor) {
+                setPlayerColor(isWhitePlayer ? 'white' : 'black');
+              }
+              
+              toast({
+                title: "Joined Game!",
+                description: `You joined as ${isWhitePlayer ? 'White' : 'Black'}. Waiting for opponent...`,
+              });
             }
           } catch (error) {
             console.error('Error parsing board state:', error);
@@ -329,18 +342,25 @@ const MultiplayerChess = () => {
       let playerColor: 'white' | 'black';
       let updateData: any = {};
 
-      if (!existingGame.white_player_id) {
+      if (!existingGame.white_player_id && !existingGame.black_player_id) {
         // First player joins - becomes white
         playerColor = 'white';
         updateData = {
           white_player_id: user.id,
-          game_status: existingGame.black_player_id ? 'active' : 'waiting'
+          game_status: 'waiting'
         };
-      } else if (!existingGame.black_player_id) {
+      } else if (existingGame.white_player_id && !existingGame.black_player_id) {
         // Second player joins - becomes black
         playerColor = 'black';
         updateData = {
           black_player_id: user.id,
+          game_status: 'active'
+        };
+      } else if (!existingGame.white_player_id && existingGame.black_player_id) {
+        // Edge case: black player joined first, this player becomes white
+        playerColor = 'white';
+        updateData = {
+          white_player_id: user.id,
           game_status: 'active'
         };
       } else {
@@ -416,6 +436,7 @@ const MultiplayerChess = () => {
         .from('game_sessions')
         .select('*')
         .eq('game_status', 'waiting')
+        .or('white_player_id.is.null,black_player_id.is.null')
         .order('created_at', { ascending: false });
 
       if (error) {
