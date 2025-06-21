@@ -101,7 +101,7 @@ const MultiplayerChess = () => {
         description: "Failed to create game",
         variant: "destructive"
       });
-      return;
+      return { data: null, error };
     }
 
     setGameSession({
@@ -116,12 +116,15 @@ const MultiplayerChess = () => {
       title: "Game Created",
       description: "Waiting for a friend to join..."
     });
+    return { data, error: null };
   };
 
   const inviteFriend = async (friendId: string) => {
-    if (!gameSession) {
-      await createGame();
-      return;
+    let session = gameSession;
+    if (!session) {
+      const newGame = await createGame();
+      if (newGame.error || !newGame.data) return;
+      session = newGame.data;
     }
 
     const { error } = await supabase
@@ -130,7 +133,7 @@ const MultiplayerChess = () => {
         black_player_id: friendId,
         game_status: 'active'
       })
-      .eq('id', gameSession.id);
+      .eq('id', session.id);
 
     if (error) {
       toast({
