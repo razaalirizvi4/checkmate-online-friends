@@ -39,6 +39,7 @@ const MultiplayerChess = () => {
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [showLobby, setShowLobby] = useState(true);
   const [joiningGameId, setJoiningGameId] = useState('');
+  const [availableGames, setAvailableGames] = useState<any[]>([]);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -72,13 +73,31 @@ const MultiplayerChess = () => {
             setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
             setMoveHistory(updatedSession.move_history || []);
             
-            if (updatedSession.game_status === 'active' && updatedSession.black_player_id) {
+            if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
               setShowLobby(false);
-              if (updatedSession.white_player_id === user.id) {
-                toast({
-                  title: "Game Started!",
-                  description: "Your opponent has joined. Good luck!"
-                });
+              
+              // Determine if current user is in this game
+              const isWhitePlayer = updatedSession.white_player_id === user.id;
+              const isBlackPlayer = updatedSession.black_player_id === user.id;
+              
+              if (isWhitePlayer || isBlackPlayer) {
+                // Set player color if not already set
+                if (!playerColor) {
+                  setPlayerColor(isWhitePlayer ? 'white' : 'black');
+                }
+                
+                // Show game started message
+                if (isWhitePlayer) {
+                  toast({
+                    title: "Game Started!",
+                    description: "Your opponent has joined. Good luck!",
+                  });
+                } else {
+                  toast({
+                    title: "Game Started!",
+                    description: "You have joined the game. Good luck!",
+                  });
+                }
               }
             }
           } catch (error) {
@@ -104,7 +123,8 @@ const MultiplayerChess = () => {
     const { data, error } = await supabase
       .from('game_sessions')
       .insert({
-        white_player_id: user.id,
+        white_player_id: null, // Start with no players
+        black_player_id: null,
         board_state: JSON.stringify(initialBoard),
         current_turn: 'white',
         game_status: 'waiting'
@@ -135,11 +155,11 @@ const MultiplayerChess = () => {
         current_turn: data.current_turn as 'white' | 'black',
         game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
       });
-      setPlayerColor('white');
+      setPlayerColor(null); // No color assigned yet
       setShowLobby(true);
       toast({
         title: "Game Created",
-        description: "Waiting for a friend to join..."
+        description: "Waiting for players to join..."
       });
       return { data, error: null };
     } catch (error) {
@@ -241,14 +261,26 @@ const MultiplayerChess = () => {
     console.log('Attempting to join game:', gameId);
 
     try {
-      // First, check if the game exists and is waiting for players
+      // First, check if the game exists (without status filter to see what's there)
       const { data: existingGame, error: fetchError } = await supabase
         .from('game_sessions')
         .select('*')
         .eq('id', gameId.trim())
         .single();
 
-      if (fetchError || !existingGame) {
+      console.log('Fetch result for join:', { existingGame, fetchError });
+
+      if (fetchError) {
+        console.error('Fetch error when joining:', fetchError);
+        toast({
+          title: "Game Not Found",
+          description: `Error: ${fetchError.message}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (!existingGame) {
         toast({
           title: "Game Not Found",
           description: "No game found with that ID.",
@@ -257,25 +289,77 @@ const MultiplayerChess = () => {
         return;
       }
 
-      if (existingGame.game_status !== 'waiting') {
+      console.log('Found game:', {
+        id: existingGame.id,
+        status: existingGame.game_status,
+        white_player: existingGame.white_player_id,
+        black_player: existingGame.black_player_id
+      });
+
+      // Check if user is already in the game
+      if (existingGame.white_player_id === user.id) {
         toast({
-          title: "Game Not Available",
-          description: `Game status is: ${existingGame.game_status}. Only waiting games can be joined.`,
+          title: "Already in Game",
+          description: "You are already the white player in this game.",
           variant: "destructive"
         });
         return;
       }
 
-      // Join the game as black player
-      const { error: updateError } = await supabase
-        .from('game_sessions')
-        .update({
+      if (existingGame.black_player_id === user.id) {
+        toast({
+          title: "Already in Game",
+          description: "You are already the black player in this game.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if game is already full
+      if (existingGame.white_player_id && existingGame.black_player_id) {
+        toast({
+          title: "Game Full",
+          description: "This game already has two players.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Determine which color to assign
+      let playerColor: 'white' | 'black';
+      let updateData: any = {};
+
+      if (!existingGame.white_player_id) {
+        // First player joins - becomes white
+        playerColor = 'white';
+        updateData = {
+          white_player_id: user.id,
+          game_status: existingGame.black_player_id ? 'active' : 'waiting'
+        };
+      } else if (!existingGame.black_player_id) {
+        // Second player joins - becomes black
+        playerColor = 'black';
+        updateData = {
           black_player_id: user.id,
           game_status: 'active'
-        })
+        };
+      } else {
+        toast({
+          title: "Game Full",
+          description: "This game already has two players.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Join the game
+      const { error: updateError } = await supabase
+        .from('game_sessions')
+        .update(updateData)
         .eq('id', gameId.trim());
 
       if (updateError) {
+        console.error('Update error when joining:', updateError);
         toast({
           title: "Error",
           description: `Failed to join the game: ${updateError.message}`,
@@ -292,18 +376,19 @@ const MultiplayerChess = () => {
           ...existingGame,
           board_state: parsedBoardState,
           current_turn: existingGame.current_turn as 'white' | 'black',
-          game_status: 'active' as const,
-          black_player_id: user.id
+          game_status: updateData.game_status,
+          white_player_id: playerColor === 'white' ? user.id : existingGame.white_player_id,
+          black_player_id: playerColor === 'black' ? user.id : existingGame.black_player_id
         });
         setBoard(parsedBoardState);
         setCurrentPlayer(existingGame.current_turn as 'white' | 'black');
         setMoveHistory(existingGame.move_history || []);
-        setPlayerColor('black');
+        setPlayerColor(playerColor);
         setShowLobby(false);
         
         toast({
           title: "Success!",
-          description: "You have joined the game as Black!",
+          description: `You have joined the game as ${playerColor === 'white' ? 'White' : 'Black'}!`,
         });
       } catch (error) {
         console.error('Error parsing board state when joining:', error);
@@ -323,6 +408,32 @@ const MultiplayerChess = () => {
       });
     }
   };
+
+  // Function to fetch available games
+  const fetchAvailableGames = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('game_status', 'waiting')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching available games:', error);
+        return;
+      }
+
+      console.log('Available games:', data);
+      setAvailableGames(data || []);
+    } catch (error) {
+      console.error('Unexpected error fetching games:', error);
+    }
+  };
+
+  // Fetch available games when component mounts
+  useEffect(() => {
+    fetchAvailableGames();
+  }, []);
 
   if (!user) {
     return (
@@ -383,6 +494,54 @@ const MultiplayerChess = () => {
             >
               Join Game
             </Button>
+          </CardContent>
+        </Card>
+
+        {/* Available Games List */}
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center justify-between">
+              Available Games
+              <Button
+                onClick={fetchAvailableGames}
+                size="sm"
+                variant="outline"
+                className="text-xs"
+              >
+                Refresh
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {availableGames.length === 0 ? (
+              <p className="text-slate-400 text-center">No games available to join</p>
+            ) : (
+              <div className="space-y-2">
+                {availableGames.map((game) => (
+                  <div
+                    key={game.id}
+                    className="flex items-center justify-between p-2 bg-slate-700 rounded"
+                  >
+                    <div className="text-slate-300 text-sm">
+                      <p>Game ID: {game.id}</p>
+                      <p className="text-xs text-slate-400">
+                        Created: {new Date(game.created_at).toLocaleTimeString()}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        setJoiningGameId(game.id);
+                        joinGame(game.id);
+                      }}
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      Join
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
         
