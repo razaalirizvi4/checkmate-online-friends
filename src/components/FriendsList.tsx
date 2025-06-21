@@ -7,23 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Users, UserPlus, Play } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
 
-interface Profile {
-  id: string;
-  username: string;
-  display_name: string;
-}
+type Profile = Tables<'profiles'>;
+type FriendshipRow = Tables<'friendships'>;
 
-interface Friendship {
-  id: string;
-  status: string;
+interface Friendship extends FriendshipRow {
   requester: Profile;
   addressee: Profile;
 }
 
-interface FriendRequest {
-  id: string;
-  status: string;
+interface FriendRequest extends FriendshipRow {
   requester_profile: Profile;
 }
 
@@ -52,10 +46,9 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     const { data: friendsData, error: friendsError } = await supabase
       .from('friendships')
       .select(`
-        id,
-        status,
-        requester:requester_id(id, username, display_name),
-        addressee:addressee_id(id, username, display_name)
+        *,
+        requester:requester_id!inner(id, username, display_name),
+        addressee:addressee_id!inner(id, username, display_name)
       `)
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq('status', 'accepted');
@@ -63,16 +56,15 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     if (friendsError) {
       console.error('Error fetching friends:', friendsError);
     } else {
-      setFriends(friendsData || []);
+      setFriends((friendsData as Friendship[]) || []);
     }
 
     // Fetch incoming friend requests
     const { data: requestsData, error: requestsError } = await supabase
       .from('friendships')
       .select(`
-        id,
-        status,
-        requester_profile:requester_id (id, username, display_name)
+        *,
+        requester_profile:requester_id!inner(*)
       `)
       .eq('addressee_id', user.id)
       .eq('status', 'pending');
@@ -80,7 +72,7 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     if (requestsError) {
       console.error('Error fetching friend requests:', requestsError);
     } else {
-      const validRequests = requestsData.filter(req => req.requester_profile);
+      const validRequests = (requestsData as any[]).filter(req => req.requester_profile);
       setFriendRequests(validRequests || []);
     }
   };
