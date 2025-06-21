@@ -56,14 +56,21 @@ const Index = () => {
           </div>
           
           <div className="flex items-center gap-4">
-            <Button
-              onClick={() => setVisible(true)}
-              variant="outline"
-              className="border-slate-600 text-slate-300 hover:bg-slate-700"
-            >
-              <Wallet className="h-4 w-4 mr-2" />
-              Connect Wallet
-            </Button>
+            {publicKey ? (
+              <Button variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+                <Wallet className="h-4 w-4 mr-2" />
+                {getShortenedPublicKey()}
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setVisible(true)}
+                variant="outline"
+                className="border-slate-600 text-slate-300 hover:bg-slate-700"
+              >
+                <Wallet className="h-4 w-4 mr-2" />
+                Connect Wallet
+              </Button>
+            )}
             <Button
               onClick={handleSignOut}
               variant="outline"
