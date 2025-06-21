@@ -9,6 +9,8 @@ import { isValidMove, makeMove } from '../utils/chessLogic';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 interface GameSession {
   id: string;
@@ -36,6 +38,7 @@ const MultiplayerChess = () => {
   }>({ white: [], black: [] });
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [showLobby, setShowLobby] = useState(true);
+  const [joiningGameId, setJoiningGameId] = useState('');
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -71,10 +74,12 @@ const MultiplayerChess = () => {
             
             if (updatedSession.game_status === 'active' && updatedSession.black_player_id) {
               setShowLobby(false);
-              toast({
-                title: "Game Started!",
-                description: "Your opponent has joined. Good luck!"
-              });
+              if (updatedSession.white_player_id === user.id) {
+                toast({
+                  title: "Game Started!",
+                  description: "Your opponent has joined. Good luck!"
+                });
+              }
             }
           } catch (error) {
             console.error('Error parsing board state:', error);
@@ -229,6 +234,96 @@ const MultiplayerChess = () => {
     }
   }, [board, selectedSquare, currentPlayer, gameState, gameSession, playerColor, moveHistory]);
 
+  // Function to join an existing game
+  const joinGame = async (gameId: string) => {
+    if (!user || !gameId.trim()) return;
+
+    console.log('Attempting to join game:', gameId);
+
+    try {
+      // First, check if the game exists and is waiting for players
+      const { data: existingGame, error: fetchError } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameId.trim())
+        .single();
+
+      if (fetchError || !existingGame) {
+        toast({
+          title: "Game Not Found",
+          description: "No game found with that ID.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      if (existingGame.game_status !== 'waiting') {
+        toast({
+          title: "Game Not Available",
+          description: `Game status is: ${existingGame.game_status}. Only waiting games can be joined.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Join the game as black player
+      const { error: updateError } = await supabase
+        .from('game_sessions')
+        .update({
+          black_player_id: user.id,
+          game_status: 'active'
+        })
+        .eq('id', gameId.trim());
+
+      if (updateError) {
+        toast({
+          title: "Error",
+          description: `Failed to join the game: ${updateError.message}`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Set up the game session for the joining player
+      try {
+        const parsedBoardState = JSON.parse(existingGame.board_state as string) as (ChessPiece | null)[][];
+        
+        setGameSession({
+          ...existingGame,
+          board_state: parsedBoardState,
+          current_turn: existingGame.current_turn as 'white' | 'black',
+          game_status: 'active' as const,
+          black_player_id: user.id
+        });
+        setBoard(parsedBoardState);
+        setCurrentPlayer(existingGame.current_turn as 'white' | 'black');
+        setMoveHistory(existingGame.move_history || []);
+        setPlayerColor('black');
+        setShowLobby(false);
+        
+        toast({
+          title: "Success!",
+          description: "You have joined the game as Black!",
+        });
+      } catch (error) {
+        console.error('Error parsing board state when joining:', error);
+        toast({
+          title: "Error",
+          description: "Failed to initialize game board",
+          variant: "destructive"
+        });
+      }
+      
+    } catch (error) {
+      console.error('Unexpected error when joining game:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    }
+  };
+
   if (!user) {
     return (
       <div className="flex items-center justify-center min-h-64">
@@ -257,6 +352,37 @@ const MultiplayerChess = () => {
                 <p className="text-sm text-slate-400 mt-2">Game ID: {gameSession.id}</p>
               </div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-slate-800 border-slate-700">
+          <CardHeader>
+            <CardTitle className="text-white">Join Existing Game</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="joinGameId" className="text-slate-300">Game ID</Label>
+              <Input
+                id="joinGameId"
+                type="text"
+                placeholder="Enter game ID..."
+                value={joiningGameId}
+                onChange={(e) => setJoiningGameId(e.target.value)}
+                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    joinGame(joiningGameId);
+                  }
+                }}
+              />
+            </div>
+            <Button
+              onClick={() => joinGame(joiningGameId)}
+              disabled={!joiningGameId.trim()}
+              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600"
+            >
+              Join Game
+            </Button>
           </CardContent>
         </Card>
         

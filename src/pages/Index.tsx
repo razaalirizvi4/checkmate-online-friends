@@ -2,112 +2,20 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import MultiplayerChess from '../components/MultiplayerChess';
 import ChessGame from '../components/ChessGame';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, Users, User, Gamepad2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
+import { LogOut, Users, User } from 'lucide-react';
 
 const Index = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const [gameId, setGameId] = useState('');
-  const [joiningGame, setJoiningGame] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
     }
   }, [user, loading, navigate]);
-
-  const handleJoinGame = async () => {
-    if (!gameId.trim() || !user) return;
-
-    setJoiningGame(true);
-    
-    try {
-      console.log('Attempting to join game with ID:', gameId.trim());
-      
-      // First, check if the game exists and is waiting for players
-      const { data: gameSession, error: fetchError } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('id', gameId.trim())
-        .single();
-
-      console.log('Fetch result:', { gameSession, fetchError });
-
-      if (fetchError) {
-        console.error('Fetch error:', fetchError);
-        toast({
-          title: "Game Not Found",
-          description: `Error: ${fetchError.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (!gameSession) {
-        toast({
-          title: "Game Not Found",
-          description: "No game found with that ID.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (gameSession.game_status !== 'waiting') {
-        toast({
-          title: "Game Not Available",
-          description: `Game status is: ${gameSession.game_status}. Only waiting games can be joined.`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Join the game as black player
-      const { error: updateError } = await supabase
-        .from('game_sessions')
-        .update({
-          black_player_id: user.id,
-          game_status: 'active'
-        })
-        .eq('id', gameId.trim());
-
-      if (updateError) {
-        console.error('Update error:', updateError);
-        toast({
-          title: "Error",
-          description: `Failed to join the game: ${updateError.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      toast({
-        title: "Success!",
-        description: "You have successfully joined the game!",
-      });
-
-      // Clear the form
-      setGameId('');
-      
-    } catch (error) {
-      console.error('Unexpected error:', error);
-      toast({
-        title: "Error",
-        description: "An unexpected error occurred. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setJoiningGame(false);
-    }
-  };
 
   if (loading) {
     return (
@@ -146,41 +54,6 @@ const Index = () => {
             Sign Out
           </Button>
         </div>
-
-        {/* Join Game Form */}
-        <Card className="bg-slate-800 border-slate-700 mb-8 max-w-md mx-auto">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Gamepad2 className="h-5 w-5" />
-              Join Existing Game
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="gameId" className="text-slate-300">Game ID</Label>
-              <Input
-                id="gameId"
-                type="text"
-                placeholder="Enter game ID..."
-                value={gameId}
-                onChange={(e) => setGameId(e.target.value)}
-                className="bg-slate-700 border-slate-600 text-white placeholder:text-slate-400"
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleJoinGame();
-                  }
-                }}
-              />
-            </div>
-            <Button
-              onClick={handleJoinGame}
-              disabled={!gameId.trim() || joiningGame}
-              className="w-full bg-green-600 hover:bg-green-700 disabled:bg-slate-600"
-            >
-              {joiningGame ? 'Joining...' : 'Join Game'}
-            </Button>
-          </CardContent>
-        </Card>
 
         <Tabs defaultValue="multiplayer" className="space-y-6">
           <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto">
