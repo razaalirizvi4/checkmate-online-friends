@@ -1,15 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MultiplayerChess from '../components/MultiplayerChess';
 import ChessGame from '../components/ChessGame';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LogOut, Users, User } from 'lucide-react';
+import { LogOut, Users, User, Wallet } from 'lucide-react';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
 
 const Index = () => {
   const { user, signOut, loading } = useAuth();
   const navigate = useNavigate();
+  const { publicKey } = useWallet();
+  const { setVisible } = useWalletModal();
 
   useEffect(() => {
     if (!loading && !user) {
@@ -34,6 +38,12 @@ const Index = () => {
     navigate('/auth');
   };
 
+  const getShortenedPublicKey = () => {
+    if (!publicKey) return '';
+    const base58 = publicKey.toBase58();
+    return `${base58.slice(0, 3)}...${base58.slice(-3)}`;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -45,14 +55,24 @@ const Index = () => {
             <p className="text-slate-300 text-xl">Welcome back, {user.email}</p>
           </div>
           
-          <Button
-            onClick={handleSignOut}
-            variant="outline"
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
-          >
-            <LogOut className="h-4 w-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-4">
+            <Button
+              onClick={() => setVisible(true)}
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <Wallet className="h-4 w-4 mr-2" />
+              Connect Wallet
+            </Button>
+            <Button
+              onClick={handleSignOut}
+              variant="outline"
+              className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         <Tabs defaultValue="multiplayer" className="space-y-6">
