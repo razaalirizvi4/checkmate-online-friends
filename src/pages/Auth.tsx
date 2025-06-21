@@ -89,9 +89,8 @@ const Auth = () => {
   };
 
   return (
-    <div 
-      className="min-h-screen w-full flex items-center justify-center bg-cover bg-center p-4"
-      style={{ backgroundImage: "url('/placeholder.svg')" }}
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-background p-4"
     >
       <div className="relative w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-2xl overflow-hidden">
         <div className="hidden md:flex flex-col justify-between p-12 bg-slate-900 bg-opacity-80 text-white">
@@ -101,7 +100,7 @@ const Auth = () => {
               Join the ultimate online chess platform. Challenge your friends, climb the ranks, and become a true master of the game.
             </p>
           </div>
-          <p className="text-sm text-slate-400">&copy; 2024 Chess Master. All rights reserved.</p>
+          <p className="text-sm text-slate-400">&copy; 2025 Chess Master. All rights reserved.</p>
         </div>
         
         <div className="p-8 backdrop-blur-md bg-slate-800/60">
