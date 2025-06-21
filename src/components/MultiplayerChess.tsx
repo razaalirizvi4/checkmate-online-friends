@@ -225,6 +225,18 @@ const MultiplayerChess = () => {
     };
   }, [gameSession, user?.id, playerColor]);
 
+  // Add periodic board reload for active games
+  useEffect(() => {
+    if (!gameSession || gameSession.game_status !== 'active') return;
+
+    const interval = setInterval(() => {
+      console.log('Periodic board reload...');
+      reloadBoardState();
+    }, 3000); // Reload every 3 seconds
+
+    return () => clearInterval(interval);
+  }, [gameSession, reloadBoardState]);
+
   const createGame = async () => {
     if (!user) return;
 
@@ -373,7 +385,8 @@ const MultiplayerChess = () => {
             .update({
               board_state: JSON.stringify(result.newBoard),
               current_turn: newTurn,
-              move_history: newMoveHistory
+              move_history: newMoveHistory,
+              updated_at: new Date().toISOString() // Force update timestamp
             })
             .eq('id', gameSession.id)
             .then(async ({ error }) => {
@@ -389,8 +402,14 @@ const MultiplayerChess = () => {
                 console.log('Move successfully updated in database');
                 setSelectedSquare(null);
                 
-                // Reload board state from database to ensure both players see the same state
+                // Force reload board state for both players
                 await reloadBoardState();
+                
+                // Add a small delay and reload again to ensure both players get the update
+                setTimeout(async () => {
+                  await reloadBoardState();
+                }, 500);
+                
                 setIsMakingMove(false);
               }
             });
@@ -831,6 +850,14 @@ const MultiplayerChess = () => {
             className="mt-2 text-xs"
           >
             Check DB State
+          </Button>
+          <Button
+            onClick={reloadBoardState}
+            size="sm"
+            variant="outline"
+            className="mt-2 text-xs ml-2"
+          >
+            Reload Board
           </Button>
         </div>
         
