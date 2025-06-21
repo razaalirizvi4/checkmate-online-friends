@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -8,13 +7,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
+import { FaDiscord } from 'react-icons/fa';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, signInWithDiscord } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -39,6 +39,21 @@ const Auth = () => {
     }
     
     setLoading(false);
+  };
+
+  const handleDiscordSignIn = async () => {
+    setLoading(true);
+    const { error } = await signInWithDiscord();
+    if (error) {
+      toast({
+        title: "Error signing in with Discord",
+        description: error.message,
+        variant: "destructive"
+      });
+      setLoading(false);
+    }
+    // The user will be redirected, so no need to set loading to false here
+    // if the sign-in is successful.
   };
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -120,6 +135,24 @@ const Auth = () => {
                   {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
               </form>
+              <div className="relative my-4">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t border-slate-600" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-slate-800 px-2 text-slate-400">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <Button
+                onClick={handleDiscordSignIn}
+                disabled={loading}
+                className="w-full border-slate-600 text-white hover:bg-slate-700 flex items-center gap-2 bg-transparent"
+              >
+                <FaDiscord className="h-5 w-5" />
+                Discord
+              </Button>
             </TabsContent>
             
             <TabsContent value="signup">

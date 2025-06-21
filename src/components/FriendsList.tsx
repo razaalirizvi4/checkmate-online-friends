@@ -16,13 +16,14 @@ interface Profile {
 
 interface Friendship {
   id: string;
-  requester_id: string;
-  addressee_id: string;
   status: string;
-  profiles: Profile;
+  requester: Profile;
+  addressee: Profile;
 }
 
-interface FriendRequest extends Friendship {
+interface FriendRequest {
+  id: string;
+  status: string;
   requester_profile: Profile;
 }
 
@@ -52,10 +53,9 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
       .from('friendships')
       .select(`
         id,
-        requester_id,
-        addressee_id,
         status,
-        profiles:addressee_id (id, username, display_name)
+        requester:requester_id(id, username, display_name),
+        addressee:addressee_id(id, username, display_name)
       `)
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq('status', 'accepted');
@@ -251,7 +251,12 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
             <p className="text-slate-400 text-sm">No friends yet. Add some friends to play with!</p>
           ) : (
             friends.map((friendship) => {
-              const friend = friendship.profiles;
+              const friend = user?.id === friendship.requester.id
+                ? friendship.addressee
+                : friendship.requester;
+
+              if (!friend) return null;
+
               return (
                 <div key={friendship.id} className="flex items-center justify-between p-2 bg-slate-700 rounded">
                   <div>
