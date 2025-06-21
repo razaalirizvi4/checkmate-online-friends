@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -23,12 +22,17 @@ interface Friendship {
   profiles: Profile;
 }
 
+interface FriendRequest extends Friendship {
+  requester_profile: Profile;
+}
+
 interface FriendsListProps {
   onInviteFriend: (friendId: string) => void;
 }
 
 const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
   const [friends, setFriends] = useState<Friendship[]>([]);
+  const [friendRequests, setFriendRequests] = useState<FriendRequest[]>([]);
   const [searchUsername, setSearchUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
@@ -36,14 +40,15 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
 
   useEffect(() => {
     if (user) {
-      fetchFriends();
+      fetchFriendsAndRequests();
     }
   }, [user]);
 
-  const fetchFriends = async () => {
+  const fetchFriendsAndRequests = async () => {
     if (!user) return;
 
-    const { data, error } = await supabase
+    // Fetch accepted friends
+    const { data: friendsData, error: friendsError } = await supabase
       .from('friendships')
       .select(`
         id,
@@ -55,12 +60,69 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq('status', 'accepted');
 
-    if (error) {
-      console.error('Error fetching friends:', error);
-      return;
+    if (friendsError) {
+      console.error('Error fetching friends:', friendsError);
+    } else {
+      setFriends(friendsData || []);
     }
 
-    setFriends(data || []);
+    // Fetch incoming friend requests
+    const { data: requestsData, error: requestsError } = await supabase
+      .from('friendships')
+      .select(`
+        id,
+        status,
+        requester_profile:requester_id (id, username, display_name)
+      `)
+      .eq('addressee_id', user.id)
+      .eq('status', 'pending');
+      
+    if (requestsError) {
+      console.error('Error fetching friend requests:', requestsError);
+    } else {
+      const validRequests = requestsData.filter(req => req.requester_profile);
+      setFriendRequests(validRequests || []);
+    }
+  };
+
+  const acceptFriendRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from('friendships')
+      .update({ status: 'accepted' })
+      .eq('id', requestId);
+
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to accept friend request",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Friend request accepted!",
+        description: "You are now friends.",
+      });
+      fetchFriendsAndRequests(); // Refresh lists
+    }
+  };
+
+  const declineFriendRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from('friendships')
+      .delete()
+      .eq('id', requestId);
+    if (error) {
+      toast({
+        title: "Error",
+        description: "Failed to decline friend request",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Friend request declined",
+      });
+      fetchFriendsAndRequests(); // Refresh lists
+    }
   };
 
   const sendFriendRequest = async () => {
@@ -149,14 +211,42 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
           <Button
             onClick={sendFriendRequest}
             disabled={loading || !searchUsername.trim()}
-            size="sm"
-            className="bg-amber-600 hover:bg-amber-700"
+            className="bg-amber-600 hover:bg-amber-700 px-3"
           >
             <UserPlus className="h-4 w-4" />
           </Button>
         </div>
 
         <div className="space-y-2">
+          {friendRequests.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-slate-300 font-semibold text-sm">Friend Requests</h4>
+              {friendRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-2 bg-slate-700/50 rounded">
+                  <div>
+                    <p className="text-white font-medium">{request.requester_profile.display_name}</p>
+                    <p className="text-slate-400 text-sm">@{request.requester_profile.username}</p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      onClick={() => acceptFriendRequest(request.id)}
+                      className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-auto"
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      onClick={() => declineFriendRequest(request.id)}
+                      className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1 h-auto"
+                    >
+                      Decline
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <hr className="border-slate-600" />
+            </div>
+          )}
+
           {friends.length === 0 ? (
             <p className="text-slate-400 text-sm">No friends yet. Add some friends to play with!</p>
           ) : (
@@ -169,7 +259,6 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
                     <p className="text-slate-400 text-sm">@{friend.username}</p>
                   </div>
                   <Button
-                    size="sm"
                     onClick={() => onInviteFriend(friend.id)}
                     className="bg-green-600 hover:bg-green-700"
                   >
