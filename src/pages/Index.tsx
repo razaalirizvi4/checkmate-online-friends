@@ -31,7 +31,11 @@ const Index = () => {
     }
 
     connection.getAccountInfo(publicKey).then(info => {
-      info && setBalance(info.lamports / LAMPORTS_PER_SOL);
+      const newBalance = info ? info.lamports / LAMPORTS_PER_SOL : 0;
+      setBalance(newBalance);
+    }).catch(error => {
+      console.error("Failed to get account info:", error);
+      setBalance(null);
     });
 
     const subscriptionId = connection.onAccountChange(
