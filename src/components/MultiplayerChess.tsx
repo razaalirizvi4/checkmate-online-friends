@@ -845,6 +845,8 @@ const MultiplayerChess = () => {
             ))}
           </div>
         </div>
+        
+        <FriendsList onInviteFriend={inviteFriend} />
       </div>
     );
   }

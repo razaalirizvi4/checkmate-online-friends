@@ -6,43 +6,43 @@
 
 @layer base {
   :root {
-    --background: 20 20% 12%; /* Dark warm gray */
-    --foreground: 30 90% 95%; /* Off-white text */
+    --background: 45 80% 15%; /* Dark mustard yellow */
+    --foreground: 45 30% 95%; /* Very light yellow/off-white */
 
-    --card: 20 20% 16%;
-    --card-foreground: 30 90% 95%;
+    --card: 45 80% 18%;
+    --card-foreground: 45 30% 95%;
 
-    --popover: 20 20% 10%;
-    --popover-foreground: 30 90% 95%;
+    --popover: 45 80% 12%;
+    --popover-foreground: 45 30% 95%;
 
     --primary: 35 92% 55%; /* Bright Orange */
-    --primary-foreground: 20 20% 12%;
+    --primary-foreground: 35 20% 10%;
 
-    --secondary: 20 15% 22%;
-    --secondary-foreground: 30 90% 95%;
+    --secondary: 40 85% 30%; /* Darker orange */
+    --secondary-foreground: 45 30% 95%;
 
-    --muted: 20 15% 22%;
-    --muted-foreground: 30 20% 70%;
+    --muted: 40 85% 25%;
+    --muted-foreground: 45 30% 70%;
 
     --accent: 45 95% 58%; /* Bright Yellow */
-    --accent-foreground: 20 20% 12%;
+    --accent-foreground: 45 80% 10%;
 
-    --destructive: 0 84.2% 60.2%; /* Bright Red */
-    --destructive-foreground: 30 90% 95%;
+    --destructive: 15 90% 55%; /* Fiery orange for alerts */
+    --destructive-foreground: 15 30% 95%;
 
-    --border: 20 20% 24%;
-    --input: 20 20% 24%;
+    --border: 45 80% 25%;
+    --input: 45 80% 25%;
     --ring: 35 92% 55%;
 
     --radius: 0.5rem;
 
-    --sidebar-background: 20 20% 16%;
-    --sidebar-foreground: 30 90% 95%;
+    --sidebar-background: 45 80% 18%;
+    --sidebar-foreground: 45 30% 95%;
     --sidebar-primary: 35 92% 55%;
-    --sidebar-primary-foreground: 20 20% 12%;
-    --sidebar-accent: 20 15% 22%;
-    --sidebar-accent-foreground: 30 90% 95%;
-    --sidebar-border: 20 20% 24%;
+    --sidebar-primary-foreground: 35 20% 10%;
+    --sidebar-accent: 40 85% 30%;
+    --sidebar-accent-foreground: 45 30% 95%;
+    --sidebar-border: 45 80% 25%;
     --sidebar-ring: 35 92% 55%;
   }
 }
