@@ -46,6 +46,55 @@ const MultiplayerChess = () => {
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Function to reload board state from database
+  const reloadBoardState = useCallback(async () => {
+    if (!gameSession) return;
+
+    try {
+      console.log('Reloading board state from database...');
+      
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameSession.id)
+        .single();
+
+      if (error) {
+        console.error('Error reloading board state:', error);
+        return;
+      }
+
+      console.log('Reloaded game data:', data);
+
+      // Parse board state
+      let parsedBoardState: (ChessPiece | null)[][];
+      
+      if (typeof data.board_state === 'string') {
+        parsedBoardState = JSON.parse(data.board_state) as (ChessPiece | null)[][];
+      } else if (Array.isArray(data.board_state)) {
+        parsedBoardState = data.board_state as unknown as (ChessPiece | null)[][];
+      } else {
+        console.error('Invalid board state format from database:', data.board_state);
+        parsedBoardState = initialBoard;
+      }
+
+      // Update all state from database
+      setGameSession({
+        ...data,
+        board_state: parsedBoardState,
+        current_turn: data.current_turn as 'white' | 'black',
+        game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+      });
+      setBoard(parsedBoardState);
+      setCurrentPlayer(data.current_turn as 'white' | 'black');
+      setMoveHistory(data.move_history || []);
+      
+      console.log('Board state reloaded successfully');
+    } catch (error) {
+      console.error('Error in reloadBoardState:', error);
+    }
+  }, [gameSession, setGameSession, setBoard, setCurrentPlayer, setMoveHistory]);
+
   // Add debugging for board state changes
   useEffect(() => {
     console.log('Board state changed:', board);
@@ -122,6 +171,9 @@ const MultiplayerChess = () => {
             
             // Reset loading state since we received an update
             setIsMakingMove(false);
+            
+            // Reload board state to ensure consistency
+            reloadBoardState();
             
             // Determine if current user is in this game
             const isWhitePlayer = updatedSession.white_player_id === user.id;
@@ -306,12 +358,6 @@ const MultiplayerChess = () => {
           setIsMakingMove(true);
           const result = makeMove(board, selectedSquare, position);
           
-          // Update local state immediately for better UX
-          setBoard(result.newBoard);
-          setCurrentPlayer(currentPlayer === 'white' ? 'black' : 'white');
-          setMoveHistory([...moveHistory, result.moveNotation]);
-          setSelectedSquare(null);
-          
           const newTurn = currentPlayer === 'white' ? 'black' : 'white';
           const newMoveHistory = [...moveHistory, result.moveNotation];
           
@@ -330,7 +376,7 @@ const MultiplayerChess = () => {
               move_history: newMoveHistory
             })
             .eq('id', gameSession.id)
-            .then(({ error }) => {
+            .then(async ({ error }) => {
               if (error) {
                 console.error('Database update error:', error);
                 toast({
@@ -338,14 +384,14 @@ const MultiplayerChess = () => {
                   description: "Failed to make move",
                   variant: "destructive"
                 });
-                // Revert local state if database update failed
-                setBoard(board);
-                setCurrentPlayer(currentPlayer);
-                setMoveHistory(moveHistory);
                 setIsMakingMove(false);
               } else {
                 console.log('Move successfully updated in database');
-                // Real-time update will handle the final state sync
+                setSelectedSquare(null);
+                
+                // Reload board state from database to ensure both players see the same state
+                await reloadBoardState();
+                setIsMakingMove(false);
               }
             });
         } else {
@@ -362,7 +408,7 @@ const MultiplayerChess = () => {
         console.log('No valid piece to select');
       }
     }
-  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove]);
+  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove, reloadBoardState]);
 
   // Function to join an existing game
   const joinGame = async (gameId: string) => {
