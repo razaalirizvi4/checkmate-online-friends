@@ -55,22 +55,32 @@ const MultiplayerChess = () => {
         },
         (payload) => {
           const updatedSession = payload.new as any;
-          setGameSession({
-            ...updatedSession,
-            board_state: JSON.parse(updatedSession.board_state as string) as (ChessPiece | null)[][],
-            current_turn: updatedSession.current_turn as 'white' | 'black',
-            game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-          });
-          setBoard(JSON.parse(updatedSession.board_state as string) as (ChessPiece | null)[][]);
-          setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
-          setMoveHistory(updatedSession.move_history || []);
           
-          if (updatedSession.game_status === 'active' && updatedSession.black_player_id) {
-            setShowLobby(false);
-            toast({
-              title: "Game Started!",
-              description: "Your opponent has joined. Good luck!"
+          try {
+            const parsedBoardState = JSON.parse(updatedSession.board_state as string) as (ChessPiece | null)[][];
+            
+            setGameSession({
+              ...updatedSession,
+              board_state: parsedBoardState,
+              current_turn: updatedSession.current_turn as 'white' | 'black',
+              game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
             });
+            setBoard(parsedBoardState);
+            setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
+            setMoveHistory(updatedSession.move_history || []);
+            
+            if (updatedSession.game_status === 'active' && updatedSession.black_player_id) {
+              setShowLobby(false);
+              toast({
+                title: "Game Started!",
+                description: "Your opponent has joined. Good luck!"
+              });
+            }
+          } catch (error) {
+            console.error('Error parsing board state:', error);
+            console.log('Raw board state:', updatedSession.board_state);
+            // Fallback to initial board if parsing fails
+            setBoard(initialBoard);
           }
         }
       )
@@ -111,19 +121,32 @@ const MultiplayerChess = () => {
 
     console.log('Game created successfully with ID:', data.id);
 
-    setGameSession({
-      ...data,
-      board_state: JSON.parse(data.board_state as string) as (ChessPiece | null)[][],
-      current_turn: data.current_turn as 'white' | 'black',
-      game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-    });
-    setPlayerColor('white');
-    setShowLobby(true);
-    toast({
-      title: "Game Created",
-      description: "Waiting for a friend to join..."
-    });
-    return { data, error: null };
+    try {
+      const parsedBoardState = JSON.parse(data.board_state as string) as (ChessPiece | null)[][];
+      
+      setGameSession({
+        ...data,
+        board_state: parsedBoardState,
+        current_turn: data.current_turn as 'white' | 'black',
+        game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+      });
+      setPlayerColor('white');
+      setShowLobby(true);
+      toast({
+        title: "Game Created",
+        description: "Waiting for a friend to join..."
+      });
+      return { data, error: null };
+    } catch (error) {
+      console.error('Error parsing board state after game creation:', error);
+      console.log('Raw board state from database:', data.board_state);
+      toast({
+        title: "Error",
+        description: "Failed to initialize game board",
+        variant: "destructive"
+      });
+      return { data: null, error: new Error('Board state parsing failed') };
+    }
   };
 
   const inviteFriend = async (friendId: string) => {
