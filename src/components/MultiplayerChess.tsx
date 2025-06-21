@@ -83,7 +83,38 @@ const MultiplayerChess = () => {
             setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
             setMoveHistory(updatedSession.move_history || []);
             
-            if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
+            // Check if this is a move update (board changed but game is active)
+            if (updatedSession.game_status === 'active' && 
+                updatedSession.white_player_id && 
+                updatedSession.black_player_id &&
+                JSON.stringify(parsedBoardState) !== JSON.stringify(board)) {
+              console.log('Board updated from real-time subscription');
+              
+              // Determine if current user is in this game
+              const isWhitePlayer = updatedSession.white_player_id === user.id;
+              const isBlackPlayer = updatedSession.black_player_id === user.id;
+              
+              if (isWhitePlayer || isBlackPlayer) {
+                // Set player color if not already set
+                if (!playerColor) {
+                  setPlayerColor(isWhitePlayer ? 'white' : 'black');
+                }
+                
+                // Show turn change notification
+                const newTurn = updatedSession.current_turn as 'white' | 'black';
+                if (newTurn === playerColor) {
+                  toast({
+                    title: "Your Turn!",
+                    description: "It's your turn to move.",
+                  });
+                } else {
+                  toast({
+                    title: "Opponent's Turn",
+                    description: "Waiting for opponent to move...",
+                  });
+                }
+              }
+            } else if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
               setShowLobby(false);
               
               // Determine if current user is in this game
@@ -245,16 +276,29 @@ const MultiplayerChess = () => {
   };
 
   const handleSquareClick = useCallback((position: Position) => {
-    if (!gameSession || gameState !== 'playing' || currentPlayer !== playerColor) return;
+    console.log('Square clicked:', position);
+    console.log('Game state:', { gameSession, gameState, currentPlayer, playerColor });
+    
+    if (!gameSession || gameSession.game_status !== 'active') {
+      console.log('Game not active');
+      return;
+    }
+
+    if (currentPlayer !== playerColor) {
+      console.log('Not your turn');
+      return;
+    }
 
     if (selectedSquare) {
       const piece = board[selectedSquare.row][selectedSquare.col];
       
       if (piece && piece.color === currentPlayer) {
         if (isValidMove(board, selectedSquare, position, piece)) {
+          console.log('Valid move, making move...');
           const result = makeMove(board, selectedSquare, position);
           
           // Update local state immediately for responsiveness
+          setBoard(result.newBoard);
           if (result.capturedPiece) {
             setCapturedPieces(prev => ({
               ...prev,
@@ -263,6 +307,13 @@ const MultiplayerChess = () => {
           }
           
           const newTurn = currentPlayer === 'white' ? 'black' : 'white';
+          const newMoveHistory = [...moveHistory, result.moveNotation];
+          
+          console.log('Updating database with move:', {
+            board_state: result.newBoard,
+            current_turn: newTurn,
+            move_history: newMoveHistory
+          });
           
           // Update the game session in Supabase
           supabase
@@ -270,28 +321,36 @@ const MultiplayerChess = () => {
             .update({
               board_state: JSON.stringify(result.newBoard),
               current_turn: newTurn,
-              move_history: [...moveHistory, result.moveNotation]
+              move_history: newMoveHistory
             })
             .eq('id', gameSession.id)
             .then(({ error }) => {
               if (error) {
+                console.error('Database update error:', error);
                 toast({
                   title: "Error",
                   description: "Failed to make move",
                   variant: "destructive"
                 });
+              } else {
+                console.log('Move successfully updated in database');
               }
             });
+        } else {
+          console.log('Invalid move');
         }
       }
       setSelectedSquare(null);
     } else {
       const piece = board[position.row][position.col];
-      if (piece && piece.color === currentPlayer && piece.color === playerColor) {
+      if (piece && piece.color === currentPlayer) {
+        console.log('Selecting piece:', piece);
         setSelectedSquare(position);
+      } else {
+        console.log('No valid piece to select');
       }
     }
-  }, [board, selectedSquare, currentPlayer, gameState, gameSession, playerColor, moveHistory]);
+  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory]);
 
   // Function to join an existing game
   const joinGame = async (gameId: string) => {
@@ -518,6 +577,16 @@ const MultiplayerChess = () => {
       console.error('Test error:', error);
     }
   };
+
+  // Check if it's the current player's turn
+  const isPlayerTurn = currentPlayer === playerColor;
+
+  // Update game state based on game session status
+  useEffect(() => {
+    if (gameSession && gameSession.game_status === 'active') {
+      setGameState('playing');
+    }
+  }, [gameSession]);
 
   if (!user) {
     return (
