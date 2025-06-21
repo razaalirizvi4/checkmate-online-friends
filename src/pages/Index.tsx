@@ -154,7 +154,7 @@ const Index = () => {
 
         <main className="flex-1 min-w-0">
           <div className="flex justify-between items-center mb-6">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold">
               Chess Master
             </h1>
             <Button
