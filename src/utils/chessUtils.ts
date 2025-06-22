@@ -61,7 +61,6 @@ export const copyBoard = (board: (ChessPiece | null)[][]): (ChessPiece | null)[]
 
 export const getPieceImage = (piece: ChessPiece): string => {
   if (!piece) return '';
-  // Example: "white_king.png" - assumes you will add these files
-  // to the `public/assets/pieces` directory.
-  return `/assets/pieces/${piece.color}_${piece.type}.png`;
+  // The piece images are SVGs located in the public assets directory.
+  return `/assets/pieces/${piece.color}_${piece.type}.svg`;
 };

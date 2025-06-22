@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 
 interface GameSession {
   id: string;
@@ -46,6 +47,7 @@ const MultiplayerChess = () => {
 
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   // Function to reload board state from database
   const reloadBoardState = useCallback(async () => {
@@ -766,49 +768,36 @@ const MultiplayerChess = () => {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-64">
-        <p className="text-white">Please sign in to play multiplayer chess</p>
+      <div className="flex flex-col items-center justify-center min-h-64 space-y-4 p-8 text-center">
+        <h3 className="text-2xl font-bold">See who's playing!</h3>
+        <p className="text-muted-foreground max-w-md">
+          Sign in to create a new game, join existing matches, and challenge your friends to a game of chess.
+        </p>
+        <Button 
+          onClick={() => navigate('/auth')} 
+          className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
+        >
+          Sign In to Continue
+        </Button>
       </div>
     );
   }
 
   if (showLobby) {
     return (
-      <div className="space-y-6">
-<<<<<<< HEAD
-        <Card className="bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
-          <CardHeader>
-            <CardTitle className="text-[hsl(var(--bonk-text))]">Multiplayer Lobby</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              onClick={createGame}
-              className="w-full bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
-            >
-              Create New Game
-            </Button>
-            {gameSession && (
-              <div className="text-center text-[hsl(var(--bonk-text-dark))]">
-                <p>Game created! Share this with a friend or invite them below.</p>
-                <p className="text-sm mt-2">Game ID: {gameSession.id}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-=======
+      <div className="space-y-4">
         <Tabs defaultValue="create" className="w-full">
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="create">Create New Game</TabsTrigger>
             <TabsTrigger value="join">Join Existing Game</TabsTrigger>
           </TabsList>
->>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
 
           <TabsContent value="create">
             <Card className="bg-transparent border-none">
-              <CardHeader>
-                <CardTitle>Start a New Match</CardTitle>
+              <CardHeader className="p-4">
+                <CardTitle className="text-lg">Start a New Match</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-2 p-4 pt-0">
                 <Button onClick={createGame} className="w-full">
                   Create New Game
                 </Button>
@@ -821,17 +810,18 @@ const MultiplayerChess = () => {
 
           <TabsContent value="join">
             <Card className="bg-transparent border-none">
-              <CardHeader>
-                <CardTitle>Join by Game ID</CardTitle>
+              <CardHeader className="p-4">
+                <CardTitle className="text-lg">Join by Game ID</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
+              <CardContent className="space-y-2 p-4 pt-0">
+                <div className="space-y-1">
                   <Label htmlFor="gameId">Game ID</Label>
                   <Input
                     id="gameId"
                     value={joiningGameId}
                     onChange={(e) => setJoiningGameId(e.target.value)}
                     placeholder="Enter game ID..."
+                    className="h-9"
                   />
                 </div>
                 <Button
@@ -847,24 +837,38 @@ const MultiplayerChess = () => {
         </Tabs>
         
         <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-2xl font-semibold">Available Games</h3>
-            <Button onClick={fetchAvailableGames} variant="outline">Refresh</Button>
+          <div className="flex justify-between items-center mb-2">
+            <h3 className="text-xl font-semibold">Available Games</h3>
+            <Button onClick={fetchAvailableGames} variant="outline" size="sm">Refresh</Button>
           </div>
-          <div className="space-y-4">
-            {availableGames.map((game) => (
-              <Card key={game.id} className="bg-secondary/40">
-                <CardContent className="flex justify-between items-center p-4">
-                  <div>
-                    <p className="font-mono text-sm">Game ID: {game.id}</p>
-                    <p className="text-xs text-muted-foreground">
-                      Created: {new Date(game.created_at).toLocaleString()}
-                    </p>
-                  </div>
-                  <Button onClick={() => joinGame(game.id)}>Join</Button>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="space-y-2 max-h-64 overflow-y-auto p-2 rounded-lg bg-black/20">
+            {availableGames.length > 0 ? (
+              availableGames.map((game) => (
+                <Card key={game.id} className="bg-black/30 backdrop-blur-sm border border-white/10">
+                  <CardContent className="flex items-center justify-between p-3">
+                    <div className="truncate pr-4">
+                      <p className="font-sans font-semibold text-sm text-white/90 truncate">
+                        ID: {game.id}
+                      </p>
+                      <p className="text-xs text-white/60">
+                        {new Date(game.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <Button 
+                      onClick={() => joinGame(game.id)} 
+                      size="sm"
+                      className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold flex-shrink-0"
+                    >
+                      Join
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))
+            ) : (
+              <div className="text-center p-8 text-muted-foreground">
+                No available games. Create one!
+              </div>
+            )}
           </div>
         </div>
         
@@ -917,7 +921,7 @@ const MultiplayerChess = () => {
           validMoves={getValidMovesForSelectedPiece()}
         />
       </div>
-      <div className="w-full lg:w-80">
+      <div className="w-full lg:w-96">
         <GameInfo
           currentPlayer={currentPlayer}
           gameState={gameState}

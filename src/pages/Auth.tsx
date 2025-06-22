@@ -13,7 +13,7 @@ import { FiUser, FiMail, FiLock } from 'react-icons/fi';
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, signInWithDiscord } = useAuth();
   const navigate = useNavigate();
@@ -59,10 +59,10 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim()) {
+    if (!username.trim()) {
       toast({
-        title: "Full name required",
-        description: "Please enter your full name",
+        title: "Username required",
+        description: "Please enter your username",
         variant: "destructive"
       });
       return;
@@ -70,7 +70,7 @@ const Auth = () => {
     
     setLoading(true);
     
-    const { error } = await signUp(email, password, fullName);
+    const { error } = await signUp(email, password, username);
     
     if (error) {
       toast({
@@ -89,11 +89,10 @@ const Auth = () => {
   };
 
   return (
-<<<<<<< HEAD
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))] flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[hsl(var(--bonk-text))]">Chess Master</CardTitle>
+          <CardTitle className="text-2xl font-bold text-[hsl(var(--bonk-text))]">Bonk Chess</CardTitle>
           <CardDescription className="text-[hsl(var(--bonk-text-dark))]">
             Sign in to play with friends
           </CardDescription>
@@ -108,25 +107,27 @@ const Auth = () => {
             <TabsContent value="signin">
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-white">Email</Label>
+                  <Label htmlFor="signin-email" className="text-[hsl(var(--bonk-text-dark))]">Email</Label>
                   <Input
                     id="signin-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
+                    placeholder="you@example.com"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-white">Password</Label>
+                  <Label htmlFor="signin-password" className="text-[hsl(var(--bonk-text-dark))]">Password</Label>
                   <Input
                     id="signin-password"
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
+                    placeholder="••••••••"
                   />
                 </div>
                 <Button 
@@ -139,10 +140,10 @@ const Auth = () => {
               </form>
               <div className="relative my-4">
                 <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-slate-600" />
+                  <span className="w-full border-t border-[hsl(var(--bonk-border))]" />
                 </div>
                 <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-slate-800 px-2 text-slate-400">
+                  <span className="bg-[hsl(var(--bonk-card-bg))] px-2 text-[hsl(var(--bonk-text-dark))]">
                     Or continue with
                   </span>
                 </div>
@@ -160,29 +161,31 @@ const Auth = () => {
             <TabsContent value="signup">
               <form onSubmit={handleSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="signup-username" className="text-white">Username</Label>
+                  <Label htmlFor="signup-username" className="text-[hsl(var(--bonk-text-dark))]">Username</Label>
                   <Input
                     id="signup-username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
                     required
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
+                    placeholder="bonk_master"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-white">Email</Label>
+                  <Label htmlFor="signup-email" className="text-[hsl(var(--bonk-text-dark))]">Email</Label>
                   <Input
                     id="signup-email"
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
+                    placeholder="you@example.com"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-white">Password</Label>
+                  <Label htmlFor="signup-password" className="text-[hsl(var(--bonk-text-dark))]">Password</Label>
                   <Input
                     id="signup-password"
                     type="password"
@@ -190,7 +193,8 @@ const Auth = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     required
                     minLength={6}
-                    className="bg-slate-700 border-slate-600 text-white"
+                    className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
+                    placeholder="••••••••"
                   />
                 </div>
                 <Button 
@@ -205,145 +209,6 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
-=======
-    <div
-      className="min-h-screen w-full flex items-center justify-center bg-background p-4"
-    >
-      <div className="relative w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-2xl overflow-hidden border">
-        <div className="hidden md:flex flex-col justify-between p-12 bg-accent text-accent-foreground">
-          <div>
-            <h1 className="text-4xl font-bold mb-4">Welcome to Chess Master</h1>
-            <p>
-              Join the ultimate online chess platform. Challenge your friends, climb the ranks, and become a true master of the game.
-            </p>
-          </div>
-          <p className="text-sm opacity-80">&copy; 2025 Chess Master. All rights reserved.</p>
-        </div>
-        
-        <div className="p-8 bg-card">
-          <Card className="w-full bg-transparent border-none shadow-none">
-            <CardHeader className="text-center">
-              <CardTitle className="text-3xl font-bold mb-2">Get Started</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Choose your method to sign in or create an account.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Tabs defaultValue="signin" className="space-y-4">
-                <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border">
-                  <TabsTrigger value="signin">Sign In</TabsTrigger>
-                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="signin">
-                  <form onSubmit={handleSignIn} className="space-y-4">
-                    <div className="relative">
-                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="signin-email"
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="bg-background/50 border-border pl-10"
-                      />
-                    </div>
-                    <div className="relative">
-                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="signin-password"
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        className="bg-background/50 border-border pl-10"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3"
-                      disabled={loading}
-                    >
-                      {loading ? 'Signing In...' : 'Sign In'}
-                    </Button>
-                  </form>
-                  <div className="relative my-6">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-border" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background/60 px-2 text-muted-foreground">
-                        Or continue with
-                      </span>
-                    </div>
-                  </div>
-                  <Button
-                    onClick={handleDiscordSignIn}
-                    disabled={loading}
-                    variant="outline"
-                    className="w-full flex items-center gap-2 py-3"
-                  >
-                    <FaDiscord className="h-5 w-5" />
-                    Discord
-                  </Button>
-                </TabsContent>
-                
-                <TabsContent value="signup">
-                  <form onSubmit={handleSignUp} className="space-y-4">
-                    <div className="relative">
-                      <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="signup-fullname"
-                        type="text"
-                        placeholder="Full Name"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        required
-                        className="bg-background/50 border-border pl-10"
-                      />
-                    </div>
-                    <div className="relative">
-                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="signup-email"
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
-                        className="bg-background/50 border-border pl-10"
-                      />
-                    </div>
-                    <div className="relative">
-                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        id="signup-password"
-                        type="password"
-                        placeholder="Password (min. 6 characters)"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
-                        minLength={6}
-                        className="bg-background/50 border-border pl-10"
-                      />
-                    </div>
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3"
-                      disabled={loading}
-                    >
-                      {loading ? 'Creating Account...' : 'Sign Up'}
-                    </Button>
-                  </form>
-                </TabsContent>
-              </Tabs>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
->>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
     </div>
   );
 };

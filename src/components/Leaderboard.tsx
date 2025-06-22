@@ -1,4 +1,7 @@
 import React from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import {
   Table,
   TableBody,
@@ -20,38 +23,58 @@ const leaderboardData = [
 ];
 
 const Leaderboard = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 space-y-4 p-8 text-center">
+        <h3 className="text-2xl font-bold">View the Leaderboard</h3>
+        <p className="text-muted-foreground max-w-md">
+          Sign in to see the top players, track your rank, and compete for the top spot on the leaderboard.
+        </p>
+        <Button 
+          onClick={() => navigate('/auth')} 
+          className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
+        >
+          Sign In to View
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+      <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-[hsl(var(--bonk-yellow))] to-[hsl(var(--bonk-orange))] bg-clip-text text-transparent">
         Leaderboard
       </h1>
-      <p className="text-muted-foreground mb-8">
+      <p className="text-[hsl(var(--bonk-text-dark))] mb-8">
         Top players on the platform, ranked by their performance.
       </p>
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="rounded-lg border border-[hsl(var(--bonk-border))] overflow-hidden bg-[hsl(var(--bonk-card-bg))]">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-[80px]">Rank</TableHead>
-              <TableHead>Player</TableHead>
-              <TableHead className="text-center">Record (W-D-L)</TableHead>
-              <TableHead className="text-right">Total Wagered (SOL)</TableHead>
-              <TableHead className="text-right">Total Profit (SOL)</TableHead>
+            <TableRow className="border-[hsl(var(--bonk-border))]">
+              <TableHead className="w-[80px] text-[hsl(var(--bonk-text-dark))]">Rank</TableHead>
+              <TableHead className="text-[hsl(var(--bonk-text-dark))]">Player</TableHead>
+              <TableHead className="text-center text-[hsl(var(--bonk-text-dark))]">Record (W-D-L)</TableHead>
+              <TableHead className="text-right text-[hsl(var(--bonk-text-dark))]">Total Wagered (SOL)</TableHead>
+              <TableHead className="text-right text-[hsl(var(--bonk-text-dark))]">Total Profit (SOL)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {leaderboardData.map((player) => (
-              <TableRow key={player.id}>
-                <TableCell className="font-bold text-lg">{player.rank}</TableCell>
-                <TableCell className="font-medium">{player.username}</TableCell>
+              <TableRow key={player.id} className="border-[hsl(var(--bonk-border))]">
+                <TableCell className="font-bold text-lg text-[hsl(var(--bonk-text))]">{player.rank}</TableCell>
+                <TableCell className="font-medium text-[hsl(var(--bonk-text))]">{player.username}</TableCell>
                 <TableCell className="text-center">
                   <Badge className="bg-green-500/10 text-green-400 border-green-500/20 mr-1">{player.w}</Badge>
                   <Badge className="bg-gray-500/10 text-gray-400 border-gray-500/20 mr-1">{player.d}</Badge>
                   <Badge className="bg-red-500/10 text-red-400 border-red-500/20">{player.l}</Badge>
                 </TableCell>
-                <TableCell className="text-right font-mono">{player.wagered.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-mono text-[hsl(var(--bonk-text))]">{player.wagered.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  <span className={`font-mono flex items-center justify-end ${player.profit > 0 ? 'text-green-400' : player.profit < 0 ? 'text-red-400' : 'text-muted-foreground'}`}>
+                  <span className={`font-mono flex items-center justify-end ${player.profit > 0 ? 'text-green-400' : player.profit < 0 ? 'text-red-400' : 'text-[hsl(var(--bonk-text-dark))]'}`}>
                     {player.profit > 0 ? <ArrowUp className="h-4 w-4 mr-1" /> : player.profit < 0 ? <ArrowDown className="h-4 w-4 mr-1" /> : null}
                     {Math.abs(player.profit).toFixed(2)}
                   </span>

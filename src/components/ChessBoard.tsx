@@ -33,20 +33,20 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
       <div className="p-4 bg-[hsl(var(--bonk-card-bg))] border-2 border-[hsl(var(--bonk-border))] rounded-lg shadow-2xl">
         {/* Column labels (top) */}
         <div className="flex mb-2">
-          <div className="w-8"></div>
+          <div className="w-10"></div>
           {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(letter => (
-            <div key={letter} className="w-16 h-6 flex items-center justify-center text-[hsl(var(--bonk-text-dark))] font-semibold">
+            <div key={letter} className="w-20 h-6 flex items-center justify-center text-black font-semibold">
               {letter}
             </div>
           ))}
-          <div className="w-8"></div>
+          <div className="w-10"></div>
         </div>
 
         <div className="flex">
           {/* Row labels (left) */}
           <div className="flex flex-col">
             {[8, 7, 6, 5, 4, 3, 2, 1].map(number => (
-              <div key={number} className="w-8 h-16 flex items-center justify-center text-[hsl(var(--bonk-text-dark))] font-semibold">
+              <div key={number} className="w-10 h-20 flex items-center justify-center text-black font-semibold">
                 {number}
               </div>
             ))}
@@ -66,43 +66,19 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                   <div
                     key={`${rowIndex}-${colIndex}`}
                     className={cn(
-                      "w-16 h-16 flex items-center justify-center cursor-pointer transition-all duration-200 relative",
-<<<<<<< HEAD
+                      "w-20 h-20 flex items-center justify-center cursor-pointer transition-all duration-200 relative",
                       isLight ? "bg-[hsl(var(--bonk-border))]" : "bg-[hsl(var(--bonk-card-bg))]",
                       isSelected && "ring-4 ring-[hsl(var(--bonk-orange))] ring-inset",
                       "hover:brightness-125"
-=======
-                      isLight ? "bg-amber-100" : "bg-amber-800",
-                      isSelected && "ring-4 ring-blue-400 ring-inset",
-                      isValidMoveSquare && !isCaptureSquare && "ring-2 ring-green-400 ring-inset",
-                      "hover:brightness-110 hover:scale-105"
->>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
                     )}
                     onClick={() => onSquareClick(position)}
                   >
                     {piece && (
-<<<<<<< HEAD
                       <img
                         src={getPieceImage(piece)}
                         alt={`${piece.color} ${piece.type}`}
-                        className="w-12 h-12 object-contain"
+                        className="w-16 h-16 object-contain"
                       />
-=======
-                      <span 
-                        className={cn(
-                          "text-5xl transition-transform duration-200 select-none relative z-10",
-                          piece.color === 'white' ? "text-white drop-shadow-lg" : "text-gray-900",
-                          "hover:scale-110"
-                        )}
-                        style={{
-                          filter: piece.color === 'white' 
-                            ? 'drop-shadow(1px 1px 2px rgba(0,0,0,0.8))' 
-                            : 'drop-shadow(1px 1px 2px rgba(255,255,255,0.3))'
-                        }}
-                      >
-                        {pieceSymbols[`${piece.color}-${piece.type}`]}
-                      </span>
->>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
                     )}
                     
                     {/* Show capture indicator (red ring around piece) */}
@@ -113,7 +89,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                     {/* Show valid move indicator (green dot) */}
                     {isValidMoveSquare && !piece && (
                       <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-4 h-4 bg-green-500 rounded-full opacity-60"></div>
+                        <div className="w-5 h-5 bg-green-500 rounded-full opacity-60"></div>
                       </div>
                     )}
                   </div>
@@ -125,7 +101,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
           {/* Row labels (right) */}
           <div className="flex flex-col">
             {[8, 7, 6, 5, 4, 3, 2, 1].map(number => (
-              <div key={number} className="w-8 h-16 flex items-center justify-center text-[hsl(var(--bonk-text-dark))] font-semibold">
+              <div key={number} className="w-10 h-20 flex items-center justify-center text-black font-semibold">
                 {number}
               </div>
             ))}
@@ -134,13 +110,13 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
 
         {/* Column labels (bottom) */}
         <div className="flex mt-2">
-          <div className="w-8"></div>
+          <div className="w-10"></div>
           {['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h'].map(letter => (
-            <div key={letter} className="w-16 h-6 flex items-center justify-center text-[hsl(var(--bonk-text-dark))] font-semibold">
+            <div key={letter} className="w-20 h-6 flex items-center justify-center text-black font-semibold">
               {letter}
             </div>
           ))}
-          <div className="w-8"></div>
+          <div className="w-10"></div>
         </div>
       </div>
 
