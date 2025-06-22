@@ -105,7 +105,7 @@ const Index = () => {
               <Button
                 onClick={() => navigate('/auth')}
                 variant="ghost"
-                className="w-full justify-start text-[hsl(var(--bonk-text-dark))] hover:bg-black/20 hover:text-[hsl(var(--bonk-text))]"
+                className="w-full justify-start text-black hover:bg-black/20 hover:text-[hsl(var(--bonk-text))]"
               >
                 <LogIn className="h-4 w-4 mr-2" />
                 Sign In
