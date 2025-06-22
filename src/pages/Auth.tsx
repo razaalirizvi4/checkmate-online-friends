@@ -88,11 +88,11 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md bg-slate-800 border-slate-700">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))] flex items-center justify-center p-4">
+      <Card className="w-full max-w-md bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-white">Chess Master</CardTitle>
-          <CardDescription className="text-slate-300">
+          <CardTitle className="text-2xl font-bold text-[hsl(var(--bonk-text))]">Chess Master</CardTitle>
+          <CardDescription className="text-[hsl(var(--bonk-text-dark))]">
             Sign in to play with friends
           </CardDescription>
         </CardHeader>
@@ -129,7 +129,7 @@ const Auth = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  className="w-full bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
                   disabled={loading}
                 >
                   {loading ? 'Signing In...' : 'Sign In'}
@@ -148,7 +148,7 @@ const Auth = () => {
               <Button
                 onClick={handleDiscordSignIn}
                 disabled={loading}
-                className="w-full border-slate-600 text-white hover:bg-slate-700 flex items-center gap-2 bg-transparent"
+                className="w-full border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))] hover:bg-black/20 flex items-center gap-2 bg-transparent"
               >
                 <FaDiscord className="h-5 w-5" />
                 Discord
@@ -193,7 +193,7 @@ const Auth = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full bg-amber-600 hover:bg-amber-700"
+                  className="w-full bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
                   disabled={loading}
                 >
                   {loading ? 'Creating Account...' : 'Sign Up'}

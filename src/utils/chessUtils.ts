@@ -1,4 +1,3 @@
-
 export interface ChessPiece {
   type: 'king' | 'queen' | 'rook' | 'bishop' | 'knight' | 'pawn';
   color: 'white' | 'black';
@@ -58,4 +57,11 @@ export const positionToNotation = (position: Position): string => {
 
 export const copyBoard = (board: (ChessPiece | null)[][]): (ChessPiece | null)[][] => {
   return board.map(row => row.map(piece => piece ? { ...piece } : null));
+};
+
+export const getPieceImage = (piece: ChessPiece): string => {
+  if (!piece) return '';
+  // Example: "white_king.png" - assumes you will add these files
+  // to the `public/assets/pieces` directory.
+  return `/assets/pieces/${piece.color}_${piece.type}.png`;
 };

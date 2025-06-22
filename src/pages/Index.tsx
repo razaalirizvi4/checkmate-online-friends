@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LogOut, Users, User } from 'lucide-react';
 
 const Index = () => {
-  const { user, signOut, loading } = useAuth();
+  const { user, signOut, loading, profile } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -35,20 +35,20 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))]">
       <div className="container mx-auto px-4 py-8">
         <div className="flex justify-between items-center mb-8">
           <div className="text-center">
-            <h1 className="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-amber-400 to-orange-500 bg-clip-text text-transparent">
+            <h1 className="text-5xl font-bold text-white mb-4 bg-gradient-to-r from-[hsl(var(--bonk-yellow))] to-[hsl(var(--bonk-orange))] bg-clip-text text-transparent">
               Chess Master
             </h1>
-            <p className="text-slate-300 text-xl">Welcome back, {user.email}</p>
+            <p className="text-[hsl(var(--bonk-text-dark))] text-xl">Welcome back, {profile?.display_name || 'Player'}</p>
           </div>
           
           <Button
             onClick={handleSignOut}
             variant="outline"
-            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            className="border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text-dark))] hover:bg-[hsl(var(--bonk-card-bg))]"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Sign Out

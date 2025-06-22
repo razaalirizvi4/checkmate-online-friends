@@ -335,21 +335,21 @@ const MultiplayerChess = () => {
   if (showLobby || !gameSession) {
     return (
       <div className="space-y-6">
-        <Card className="bg-slate-800 border-slate-700">
+        <Card className="bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
           <CardHeader>
-            <CardTitle className="text-white">Multiplayer Lobby</CardTitle>
+            <CardTitle className="text-[hsl(var(--bonk-text))]">Multiplayer Lobby</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Button
               onClick={createGame}
-              className="w-full bg-amber-600 hover:bg-amber-700"
+              className="w-full bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
             >
               Create New Game
             </Button>
             {gameSession && (
-              <div className="text-center text-slate-300">
+              <div className="text-center text-[hsl(var(--bonk-text-dark))]">
                 <p>Game created! Share this with a friend or invite them below.</p>
-                <p className="text-sm text-slate-400 mt-2">Game ID: {gameSession.id}</p>
+                <p className="text-sm mt-2">Game ID: {gameSession.id}</p>
               </div>
             )}
           </CardContent>

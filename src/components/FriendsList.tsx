@@ -54,8 +54,8 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
       .select(`
         id,
         status,
-        requester:requester_id(id, username, display_name),
-        addressee:addressee_id(id, username, display_name)
+        requester:profiles!friendships_requester_id_fkey(id, username, display_name),
+        addressee:profiles!friendships_addressee_id_fkey(id, username, display_name)
       `)
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq('status', 'accepted');
@@ -72,7 +72,7 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
       .select(`
         id,
         status,
-        requester_profile:requester_id (id, username, display_name)
+        requester_profile:profiles!friendships_requester_id_fkey(id, username, display_name)
       `)
       .eq('addressee_id', user.id)
       .eq('status', 'pending');
@@ -192,9 +192,9 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
   };
 
   return (
-    <Card className="bg-slate-800 border-slate-700">
+    <Card className="bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-[hsl(var(--bonk-text))] flex items-center gap-2">
           <Users className="h-5 w-5" />
           Friends
         </CardTitle>
@@ -205,13 +205,13 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
             placeholder="Enter username"
             value={searchUsername}
             onChange={(e) => setSearchUsername(e.target.value)}
-            className="bg-slate-700 border-slate-600 text-white"
+            className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
             onKeyPress={(e) => e.key === 'Enter' && sendFriendRequest()}
           />
           <Button
             onClick={sendFriendRequest}
             disabled={loading || !searchUsername.trim()}
-            className="bg-amber-600 hover:bg-amber-700 px-3"
+            className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold px-3"
           >
             <UserPlus className="h-4 w-4" />
           </Button>
@@ -220,35 +220,35 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
         <div className="space-y-2">
           {friendRequests.length > 0 && (
             <div className="space-y-2">
-              <h4 className="text-slate-300 font-semibold text-sm">Friend Requests</h4>
+              <h4 className="text-[hsl(var(--bonk-text-dark))] font-semibold text-sm">Friend Requests</h4>
               {friendRequests.map((request) => (
-                <div key={request.id} className="flex items-center justify-between p-2 bg-slate-700/50 rounded">
+                <div key={request.id} className="flex items-center justify-between p-2 bg-black/20 rounded">
                   <div>
-                    <p className="text-white font-medium">{request.requester_profile.display_name}</p>
-                    <p className="text-slate-400 text-sm">@{request.requester_profile.username}</p>
+                    <p className="text-[hsl(var(--bonk-text))] font-medium">{request.requester_profile.display_name}</p>
+                    <p className="text-[hsl(var(--bonk-text-dark))] text-sm">@{request.requester_profile.username}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => acceptFriendRequest(request.id)}
-                      className="bg-green-600 hover:bg-green-700 text-xs px-2 py-1 h-auto"
+                      className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold text-xs px-2 py-1 h-auto"
                     >
                       Accept
                     </Button>
                     <Button
                       onClick={() => declineFriendRequest(request.id)}
-                      className="bg-red-600 hover:bg-red-700 text-xs px-2 py-1 h-auto"
+                      className="bg-black/20 hover:bg-black/40 border border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text-dark))] text-xs px-2 py-1 h-auto"
                     >
                       Decline
                     </Button>
                   </div>
                 </div>
               ))}
-              <hr className="border-slate-600" />
+              <hr className="border-[hsl(var(--bonk-border))]" />
             </div>
           )}
 
           {friends.length === 0 ? (
-            <p className="text-slate-400 text-sm">No friends yet. Add some friends to play with!</p>
+            <p className="text-[hsl(var(--bonk-text-dark))] text-sm">No friends yet. Add some friends to play with!</p>
           ) : (
             friends.map((friendship) => {
               const friend = user?.id === friendship.requester.id
@@ -258,14 +258,14 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
               if (!friend) return null;
 
               return (
-                <div key={friendship.id} className="flex items-center justify-between p-2 bg-slate-700 rounded">
+                <div key={friendship.id} className="flex items-center justify-between p-2 bg-black/20 rounded">
                   <div>
-                    <p className="text-white font-medium">{friend.display_name}</p>
-                    <p className="text-slate-400 text-sm">@{friend.username}</p>
+                    <p className="text-[hsl(var(--bonk-text))] font-medium">{friend.display_name}</p>
+                    <p className="text-[hsl(var(--bonk-text-dark))] text-sm">@{friend.username}</p>
                   </div>
                   <Button
                     onClick={() => onInviteFriend(friend.id)}
-                    className="bg-green-600 hover:bg-green-700"
+                    className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold"
                   >
                     <Play className="h-4 w-4 mr-1" />
                     Invite
