@@ -309,3 +309,63 @@ const generateMoveNotation = (
   
   return `${pieceSymbol}${isCapture ? 'x' : ''}${toNotation}`;
 };
+
+export const boardToFen = (
+  board: (ChessPiece | null)[][],
+  currentPlayer: 'white' | 'black'
+  // moveHistory: string[] // Needed for en passant later
+): string => {
+  let fen = '';
+  const pieceTypeToFen: { [key: string]: string } = {
+    pawn: 'p',
+    knight: 'n',
+    bishop: 'b',
+    rook: 'r',
+    queen: 'q',
+    king: 'k',
+  };
+
+  for (let i = 0; i < 8; i++) {
+    let emptySquares = 0;
+    for (let j = 0; j < 8; j++) {
+      const piece = board[i][j];
+      if (piece) {
+        if (emptySquares > 0) {
+          fen += emptySquares;
+          emptySquares = 0;
+        }
+        const fenChar = pieceTypeToFen[piece.type];
+        fen += piece.color === 'white' ? fenChar.toUpperCase() : fenChar;
+      } else {
+        emptySquares++;
+      }
+    }
+    if (emptySquares > 0) {
+      fen += emptySquares;
+    }
+    if (i < 7) {
+      fen += '/';
+    }
+  }
+
+  fen += ` ${currentPlayer === 'white' ? 'w' : 'b'}`;
+
+  let castling = '';
+  const whiteKing = board[7][4];
+  if (whiteKing?.type === 'king' && !whiteKing.hasMoved) {
+    if (board[7][7]?.type === 'rook' && !board[7][7]?.hasMoved) castling += 'K';
+    if (board[7][0]?.type === 'rook' && !board[7][0]?.hasMoved) castling += 'Q';
+  }
+  const blackKing = board[0][4];
+  if (blackKing?.type === 'king' && !blackKing.hasMoved) {
+    if (board[0][7]?.type === 'rook' && !board[0][7]?.hasMoved) castling += 'k';
+    if (board[0][0]?.type === 'rook' && !board[0][0]?.hasMoved) castling += 'q';
+  }
+
+  fen += ` ${castling || '-'}`;
+
+  // TODO: Implement en passant, halfmove clock, and fullmove number for full FEN compliance
+  fen += ' - 0 1';
+
+  return fen;
+};
