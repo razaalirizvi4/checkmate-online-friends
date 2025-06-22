@@ -275,8 +275,6 @@ export const makeMove = (
     gameState = 'checkmate';
   } else if (isStalemateResult || insufficientMaterial) {
     gameState = 'draw';
-  } else if (isCheck) {
-    gameState = 'check';
   }
 
   return {
