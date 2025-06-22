@@ -7,6 +7,7 @@ import { AuthProvider } from "./contexts/AuthContext";
 // import WalletContextProvider from "./contexts/WalletContextProvider";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Landing from "./pages/Landing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,17 +22,18 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <WalletContextProvider>
+      <AuthProvider>
+        <WalletContextProvider>
+          <BrowserRouter>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/play" element={<Index />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
-          </WalletContextProvider>
-        </AuthProvider>
-      </BrowserRouter>
+          </BrowserRouter>
+        </WalletContextProvider>
+      </AuthProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
