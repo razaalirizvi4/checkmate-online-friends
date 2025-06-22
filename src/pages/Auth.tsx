@@ -36,7 +36,7 @@ const Auth = () => {
         title: "Success",
         description: "Signed in successfully!"
       });
-      navigate('/');
+      navigate('/play');
     }
     
     setLoading(false);
