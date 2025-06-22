@@ -10,8 +10,12 @@ interface Profile {
 interface AuthContextType {
   user: User | null;
   session: Session | null;
+<<<<<<< HEAD
   profile: Profile | null;
   signUp: (email: string, password: string, username: string) => Promise<{ error: any }>;
+=======
+  signUp: (email: string, password: string, fullName: string) => Promise<{ error: any }>;
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithDiscord: () => Promise<{ error: any }>;
   signOut: () => Promise<void>;
@@ -75,7 +79,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, username: string) => {
+  const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/`;
     
     const { error } = await supabase.auth.signUp({
@@ -84,8 +88,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       options: {
         emailRedirectTo: redirectUrl,
         data: {
-          username,
-          display_name: username
+          full_name: fullName,
         }
       }
     });

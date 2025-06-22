@@ -7,23 +7,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Users, UserPlus, Play } from 'lucide-react';
+import { Tables } from '@/integrations/supabase/types';
 
-interface Profile {
-  id: string;
-  username: string;
-  display_name: string;
-}
+type Profile = Tables<'profiles'>;
+type FriendshipRow = Tables<'friendships'>;
 
-interface Friendship {
-  id: string;
-  status: string;
+interface Friendship extends FriendshipRow {
   requester: Profile;
   addressee: Profile;
 }
 
-interface FriendRequest {
-  id: string;
-  status: string;
+interface FriendRequest extends FriendshipRow {
   requester_profile: Profile;
 }
 
@@ -52,10 +46,16 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     const { data: friendsData, error: friendsError } = await supabase
       .from('friendships')
       .select(`
+<<<<<<< HEAD
         id,
         status,
         requester:profiles!friendships_requester_id_fkey(id, username, display_name),
         addressee:profiles!friendships_addressee_id_fkey(id, username, display_name)
+=======
+        *,
+        requester:requester_id!inner(id, username, display_name),
+        addressee:addressee_id!inner(id, username, display_name)
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
       `)
       .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
       .eq('status', 'accepted');
@@ -63,16 +63,21 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     if (friendsError) {
       console.error('Error fetching friends:', friendsError);
     } else {
-      setFriends(friendsData || []);
+      setFriends(friendsData as any || []);
     }
 
     // Fetch incoming friend requests
     const { data: requestsData, error: requestsError } = await supabase
       .from('friendships')
       .select(`
+<<<<<<< HEAD
         id,
         status,
         requester_profile:profiles!friendships_requester_id_fkey(id, username, display_name)
+=======
+        *,
+        requester_profile:requester_id!inner(*)
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
       `)
       .eq('addressee_id', user.id)
       .eq('status', 'pending');
@@ -80,7 +85,7 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
     if (requestsError) {
       console.error('Error fetching friend requests:', requestsError);
     } else {
-      const validRequests = requestsData.filter(req => req.requester_profile);
+      const validRequests = (requestsData as any[]).filter(req => req.requester_profile);
       setFriendRequests(validRequests || []);
     }
   };
@@ -192,9 +197,15 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
   };
 
   return (
+<<<<<<< HEAD
     <Card className="bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
       <CardHeader>
         <CardTitle className="text-[hsl(var(--bonk-text))] flex items-center gap-2">
+=======
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
           <Users className="h-5 w-5" />
           Friends
         </CardTitle>
@@ -205,13 +216,20 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
             placeholder="Enter username"
             value={searchUsername}
             onChange={(e) => setSearchUsername(e.target.value)}
+<<<<<<< HEAD
             className="bg-black/20 border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text))]"
+=======
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
             onKeyPress={(e) => e.key === 'Enter' && sendFriendRequest()}
           />
           <Button
             onClick={sendFriendRequest}
             disabled={loading || !searchUsername.trim()}
+<<<<<<< HEAD
             className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold px-3"
+=======
+            className="px-3"
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
           >
             <UserPlus className="h-4 w-4" />
           </Button>
@@ -220,34 +238,58 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
         <div className="space-y-2">
           {friendRequests.length > 0 && (
             <div className="space-y-2">
+<<<<<<< HEAD
               <h4 className="text-[hsl(var(--bonk-text-dark))] font-semibold text-sm">Friend Requests</h4>
               {friendRequests.map((request) => (
                 <div key={request.id} className="flex items-center justify-between p-2 bg-black/20 rounded">
                   <div>
                     <p className="text-[hsl(var(--bonk-text))] font-medium">{request.requester_profile.display_name}</p>
                     <p className="text-[hsl(var(--bonk-text-dark))] text-sm">@{request.requester_profile.username}</p>
+=======
+              <h4 className="text-muted-foreground font-semibold text-sm">Friend Requests</h4>
+              {friendRequests.map((request) => (
+                <div key={request.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded">
+                  <div>
+                    <p className="font-medium">{request.requester_profile.display_name}</p>
+                    <p className="text-muted-foreground text-sm">@{request.requester_profile.username}</p>
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
                   </div>
                   <div className="flex gap-2">
                     <Button
                       onClick={() => acceptFriendRequest(request.id)}
+<<<<<<< HEAD
                       className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold text-xs px-2 py-1 h-auto"
+=======
+                      variant="default"
+                      size="sm"
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
                     >
                       Accept
                     </Button>
                     <Button
                       onClick={() => declineFriendRequest(request.id)}
+<<<<<<< HEAD
                       className="bg-black/20 hover:bg-black/40 border border-[hsl(var(--bonk-border))] text-[hsl(var(--bonk-text-dark))] text-xs px-2 py-1 h-auto"
+=======
+                      variant="destructive"
+                      size="sm"
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
                     >
                       Decline
                     </Button>
                   </div>
                 </div>
               ))}
+<<<<<<< HEAD
               <hr className="border-[hsl(var(--bonk-border))]" />
+=======
+              <hr className="border-border" />
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
             </div>
           )}
 
           {friends.length === 0 ? (
+<<<<<<< HEAD
             <p className="text-[hsl(var(--bonk-text-dark))] text-sm">No friends yet. Add some friends to play with!</p>
           ) : (
             friends.map((friendship) => {
@@ -273,6 +315,33 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
                 </div>
               );
             })
+=======
+            <p className="text-muted-foreground text-sm text-center">No friends yet. Add some!</p>
+          ) : (
+            <div className="space-y-2">
+              {friends.map((friendship) => {
+                const friendProfile = friendship.requester.id === user?.id
+                  ? friendship.addressee
+                  : friendship.requester;
+                return (
+                  <div key={friendship.id} className="flex items-center justify-between p-2 bg-secondary/50 rounded">
+                    <div>
+                      <p className="font-medium">{friendProfile.display_name}</p>
+                      <p className="text-muted-foreground text-sm">@{friendProfile.username}</p>
+                    </div>
+                    <Button
+                      onClick={() => onInviteFriend(friendProfile.id)}
+                      variant="ghost"
+                      size="sm"
+                    >
+                      <Play className="h-4 w-4 mr-2" />
+                      Invite
+                    </Button>
+                  </div>
+                );
+              })}
+            </div>
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
           )}
         </div>
       </CardContent>

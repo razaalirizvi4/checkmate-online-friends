@@ -5,6 +5,10 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  define: {
+    "global": "globalThis",
+    "process.env": {},
+  },
   server: {
     host: "::",
     port: 8080,
@@ -18,5 +22,8 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: ['buffer'],
   },
 }));

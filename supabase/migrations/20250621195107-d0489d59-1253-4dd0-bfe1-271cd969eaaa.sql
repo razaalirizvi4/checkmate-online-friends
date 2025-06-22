@@ -1,4 +1,3 @@
-
 -- Create profiles table for user information
 CREATE TABLE public.profiles (
   id UUID NOT NULL REFERENCES auth.users ON DELETE CASCADE,
@@ -24,7 +23,7 @@ CREATE TABLE public.friendships (
 -- Create game_sessions table
 CREATE TABLE public.game_sessions (
   id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
-  white_player_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+  white_player_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   black_player_id UUID REFERENCES public.profiles(id) ON DELETE CASCADE,
   board_state JSONB NOT NULL,
   current_turn TEXT NOT NULL CHECK (current_turn IN ('white', 'black')),
@@ -55,9 +54,9 @@ CREATE POLICY "Users can update friendships they're involved in" ON public.frien
 
 -- RLS Policies for game_sessions
 CREATE POLICY "Players can view their games" ON public.game_sessions 
-  FOR SELECT USING (auth.uid() = white_player_id OR auth.uid() = black_player_id);
+  FOR SELECT USING (auth.uid() = white_player_id OR auth.uid() = black_player_id OR white_player_id IS NULL);
 CREATE POLICY "Players can create games" ON public.game_sessions 
-  FOR INSERT WITH CHECK (auth.uid() = white_player_id);
+  FOR INSERT WITH CHECK (true);
 CREATE POLICY "Players can update their games" ON public.game_sessions 
   FOR UPDATE USING (auth.uid() = white_player_id OR auth.uid() = black_player_id);
 

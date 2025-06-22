@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '@/hooks/use-toast';
 import { FaDiscord } from 'react-icons/fa';
+import { FiUser, FiMail, FiLock } from 'react-icons/fi';
 
 const Auth = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [username, setUsername] = useState('');
+  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp, signInWithDiscord } = useAuth();
   const navigate = useNavigate();
@@ -58,10 +59,10 @@ const Auth = () => {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!username.trim()) {
+    if (!fullName.trim()) {
       toast({
-        title: "Username required",
-        description: "Please enter a username",
+        title: "Full name required",
+        description: "Please enter your full name",
         variant: "destructive"
       });
       return;
@@ -69,7 +70,7 @@ const Auth = () => {
     
     setLoading(true);
     
-    const { error } = await signUp(email, password, username);
+    const { error } = await signUp(email, password, fullName);
     
     if (error) {
       toast({
@@ -88,6 +89,7 @@ const Auth = () => {
   };
 
   return (
+<<<<<<< HEAD
     <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))] flex items-center justify-center p-4">
       <Card className="w-full max-w-md bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
         <CardHeader className="text-center">
@@ -203,6 +205,145 @@ const Auth = () => {
           </Tabs>
         </CardContent>
       </Card>
+=======
+    <div
+      className="min-h-screen w-full flex items-center justify-center bg-background p-4"
+    >
+      <div className="relative w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 rounded-xl shadow-2xl overflow-hidden border">
+        <div className="hidden md:flex flex-col justify-between p-12 bg-accent text-accent-foreground">
+          <div>
+            <h1 className="text-4xl font-bold mb-4">Welcome to Chess Master</h1>
+            <p>
+              Join the ultimate online chess platform. Challenge your friends, climb the ranks, and become a true master of the game.
+            </p>
+          </div>
+          <p className="text-sm opacity-80">&copy; 2025 Chess Master. All rights reserved.</p>
+        </div>
+        
+        <div className="p-8 bg-card">
+          <Card className="w-full bg-transparent border-none shadow-none">
+            <CardHeader className="text-center">
+              <CardTitle className="text-3xl font-bold mb-2">Get Started</CardTitle>
+              <CardDescription className="text-muted-foreground">
+                Choose your method to sign in or create an account.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Tabs defaultValue="signin" className="space-y-4">
+                <TabsList className="grid w-full grid-cols-2 bg-secondary border border-border">
+                  <TabsTrigger value="signin">Sign In</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="signin">
+                  <form onSubmit={handleSignIn} className="space-y-4">
+                    <div className="relative">
+                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-background/50 border-border pl-10"
+                      />
+                    </div>
+                    <div className="relative">
+                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="Password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-background/50 border-border pl-10"
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3"
+                      disabled={loading}
+                    >
+                      {loading ? 'Signing In...' : 'Sign In'}
+                    </Button>
+                  </form>
+                  <div className="relative my-6">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t border-border" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background/60 px-2 text-muted-foreground">
+                        Or continue with
+                      </span>
+                    </div>
+                  </div>
+                  <Button
+                    onClick={handleDiscordSignIn}
+                    disabled={loading}
+                    variant="outline"
+                    className="w-full flex items-center gap-2 py-3"
+                  >
+                    <FaDiscord className="h-5 w-5" />
+                    Discord
+                  </Button>
+                </TabsContent>
+                
+                <TabsContent value="signup">
+                  <form onSubmit={handleSignUp} className="space-y-4">
+                    <div className="relative">
+                      <FiUser className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signup-fullname"
+                        type="text"
+                        placeholder="Full Name"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        required
+                        className="bg-background/50 border-border pl-10"
+                      />
+                    </div>
+                    <div className="relative">
+                      <FiMail className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signup-email"
+                        type="email"
+                        placeholder="Email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-background/50 border-border pl-10"
+                      />
+                    </div>
+                    <div className="relative">
+                      <FiLock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                      <Input
+                        id="signup-password"
+                        type="password"
+                        placeholder="Password (min. 6 characters)"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        minLength={6}
+                        className="bg-background/50 border-border pl-10"
+                      />
+                    </div>
+                    <Button 
+                      type="submit" 
+                      className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-bold py-3"
+                      disabled={loading}
+                    >
+                      {loading ? 'Creating Account...' : 'Sign Up'}
+                    </Button>
+                  </form>
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
     </div>
   );
 };

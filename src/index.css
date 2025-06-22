@@ -6,6 +6,7 @@
 
 @layer base {
   :root {
+<<<<<<< HEAD
     --background: 240 10% 3.9%;
     --foreground: 0 0% 98%;
 
@@ -102,6 +103,46 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
+=======
+    --background: 22 88% 50%; /* Slightly darker, richer orange */
+    --foreground: 45 40% 96%; /* Off-white with a hint of yellow */
+
+    --card: 19 88% 48%; /* Slightly Darker Orange */
+    --card-foreground: 45 40% 96%;
+
+    --popover: 19 88% 45%;
+    --popover-foreground: 45 40% 96%;
+
+    --primary: 48 96% 59%; /* Bright Yellow */
+    --primary-foreground: 26 20% 18%; /* Dark Text on Yellow */
+
+    --secondary: 19 88% 48%; /* Darker Orange */
+    --secondary-foreground: 45 40% 96%;
+
+    --muted: 19 88% 40%;
+    --muted-foreground: 45 25% 85%; /* Lighter, more visible muted text */
+
+    --accent: 48 96% 59%; /* Bright Yellow */
+    --accent-foreground: 26 20% 18%; /* Dark Text on Yellow */
+
+    --destructive: 0 84% 60%; /* Red */
+    --destructive-foreground: 45 40% 96%;
+
+    --border: 19 88% 60%;
+    --input: 19 88% 48%;
+    --ring: 48 96% 59%; /* Yellow Ring */
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 19 88% 48%;
+    --sidebar-foreground: 45 40% 96%;
+    --sidebar-primary: 48 96% 59%;
+    --sidebar-primary-foreground: 26 20% 18%;
+    --sidebar-accent: 19 88% 52%;
+    --sidebar-accent-foreground: 45 40% 96%;
+    --sidebar-border: 19 88% 60%;
+    --sidebar-ring: 48 96% 59%;
+>>>>>>> 6dfd6e1502a7d024f68a605fd3ab0c71d6e5ca63
   }
 }
 

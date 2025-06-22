@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
@@ -44,7 +43,8 @@ const GameInfo: React.FC<GameInfoProps> = ({
       case 'checkmate':
         return `${currentPlayer === 'white' ? 'Black' : 'White'} wins by checkmate!`;
       case 'stalemate':
-        return 'Game ends in stalemate!';
+      case 'draw':
+        return 'Game ends in a draw!';
       case 'check':
         return `${currentPlayer} is in check!`;
       default:
@@ -64,7 +64,7 @@ const GameInfo: React.FC<GameInfoProps> = ({
             "text-lg font-semibold",
             gameState === 'checkmate' ? "text-red-400" :
             gameState === 'check' ? "text-yellow-400" :
-            gameState === 'stalemate' ? "text-blue-400" :
+            gameState === 'stalemate' || gameState === 'draw' ? "text-blue-400" :
             "text-green-400"
           )}>
             {getGameStatusMessage()}

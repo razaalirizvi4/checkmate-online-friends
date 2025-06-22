@@ -9,7 +9,7 @@ export interface Position {
   col: number;
 }
 
-export type GameState = 'playing' | 'check' | 'checkmate' | 'stalemate';
+export type GameState = 'playing' | 'check' | 'checkmate' | 'stalemate' | 'draw';
 
 // Initialize the chess board with starting positions
 export const initialBoard: (ChessPiece | null)[][] = [
