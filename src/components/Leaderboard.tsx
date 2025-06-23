@@ -48,18 +48,18 @@ const Leaderboard = () => {
       <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-[hsl(var(--bonk-yellow))] to-[hsl(var(--bonk-orange))] bg-clip-text text-transparent">
         Leaderboard
       </h1>
-      <p className="text-[hsl(var(--bonk-text-dark))] mb-8">
+      <p className="text-black mb-8">
         Top players on the platform, ranked by their performance.
       </p>
       <div className="rounded-lg border border-[hsl(var(--bonk-border))] overflow-hidden bg-[hsl(var(--bonk-card-bg))]">
         <Table>
           <TableHeader>
             <TableRow className="border-[hsl(var(--bonk-border))]">
-              <TableHead className="w-[80px] text-[hsl(var(--bonk-text-dark))]">Rank</TableHead>
-              <TableHead className="text-[hsl(var(--bonk-text-dark))]">Player</TableHead>
-              <TableHead className="text-center text-[hsl(var(--bonk-text-dark))]">Record (W-D-L)</TableHead>
-              <TableHead className="text-right text-[hsl(var(--bonk-text-dark))]">Total Wagered (SOL)</TableHead>
-              <TableHead className="text-right text-[hsl(var(--bonk-text-dark))]">Total Profit (SOL)</TableHead>
+              <TableHead className="w-[80px] text-black">Rank</TableHead>
+              <TableHead className="text-black">Player</TableHead>
+              <TableHead className="text-center text-black">Record (W-D-L)</TableHead>
+              <TableHead className="text-right text-black">Total Wagered (SOL)</TableHead>
+              <TableHead className="text-right text-black">Total Profit (SOL)</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
