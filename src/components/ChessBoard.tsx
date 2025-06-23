@@ -67,7 +67,7 @@ const ChessBoard: React.FC<ChessBoardProps> = ({
                     key={`${rowIndex}-${colIndex}`}
                     className={cn(
                       "w-20 h-20 flex items-center justify-center cursor-pointer transition-all duration-200 relative",
-                      isLight ? "bg-[hsl(var(--bonk-border))]" : "bg-[hsl(var(--bonk-card-bg))]",
+                      isLight ? "bg-[#FDE9D6]" : "bg-[#FF7F2A]",
                       isSelected && "ring-4 ring-[hsl(var(--bonk-orange))] ring-inset",
                       "hover:brightness-125"
                     )}

@@ -168,6 +168,13 @@ const MultiplayerChess = () => {
               setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
               setMoveHistory(updatedSession.move_history || []);
               
+              // Always set playerColor based on user ID and session
+              const isWhitePlayer = updatedSession.white_player_id === user.id;
+              const isBlackPlayer = updatedSession.black_player_id === user.id;
+              if (isWhitePlayer) setPlayerColor('white');
+              else if (isBlackPlayer) setPlayerColor('black');
+              else setPlayerColor(null);
+              
               console.log('Board state updated to:', parsedBoardState);
             } else {
               console.log('Ignoring older board state update');
@@ -179,20 +186,12 @@ const MultiplayerChess = () => {
             // Reload board state to ensure consistency
             reloadBoardState();
             
-            // Determine if current user is in this game
+            // Show appropriate notifications based on game status
             const isWhitePlayer = updatedSession.white_player_id === user.id;
             const isBlackPlayer = updatedSession.black_player_id === user.id;
-            
             if (isWhitePlayer || isBlackPlayer) {
-              // Set player color if not already set
-              if (!playerColor) {
-                setPlayerColor(isWhitePlayer ? 'white' : 'black');
-              }
-              
-              // Show appropriate notifications based on game status
               if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
                 setShowLobby(false);
-                
                 // Show turn change notification
                 const newTurn = updatedSession.current_turn as 'white' | 'black';
                 if (newTurn === (isWhitePlayer ? 'white' : 'black')) {
@@ -631,12 +630,17 @@ const MultiplayerChess = () => {
         setBoard(parsedBoardState);
         setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
         setMoveHistory(updateResult.move_history || []);
-        setPlayerColor(playerColor);
+        // Always set playerColor based on user ID and session
+        const isWhitePlayer = updateResult.white_player_id === user.id;
+        const isBlackPlayer = updateResult.black_player_id === user.id;
+        if (isWhitePlayer) setPlayerColor('white');
+        else if (isBlackPlayer) setPlayerColor('black');
+        else setPlayerColor(null);
         setShowLobby(false);
         
         toast({
           title: "Success!",
-          description: `You have joined the game as Black!`,
+          description: `You have joined the game as ${isWhitePlayer ? 'White' : isBlackPlayer ? 'Black' : 'Spectator'}!`,
         });
       } catch (error) {
         console.error('Error parsing board state when joining:', error);

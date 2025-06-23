@@ -99,7 +99,7 @@ const Auth = () => {
       <Card className="w-full max-w-md bg-[hsl(var(--bonk-card-bg))] border-[hsl(var(--bonk-border))]">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-[hsl(var(--bonk-text))]">Bonk Chess</CardTitle>
-          <CardDescription className="text-[hsl(var(--bonk-text-dark))]">
+          <CardDescription className="text-black">
             Sign in with Discord to play with friends
           </CardDescription>
         </CardHeader>
