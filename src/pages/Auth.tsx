@@ -50,7 +50,6 @@ const Auth = () => {
   };
 
   const handleDiscordSignIn = async () => {
-    setLoading(true);
     const { error } = await signInWithDiscord();
     if (error) {
       toast({
@@ -58,7 +57,6 @@ const Auth = () => {
         description: error.message,
         variant: "destructive"
       });
-      setLoading(false);
     }
   };
 
