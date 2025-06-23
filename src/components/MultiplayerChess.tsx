@@ -438,7 +438,12 @@ const MultiplayerChess = () => {
               current_turn: newTurn,
               move_history: newMoveHistory,
               game_status: result.gameState === 'checkmate' ? 'completed' : 'active',
-              winner: result.gameState === 'checkmate' ? user.id : null,
+              winner:
+                result.gameState === 'checkmate'
+                  ? (currentPlayer === 'white' ? 'white' : 'black')
+                  : result.gameState === 'draw'
+                  ? 'draw'
+                  : null,
               updated_at: new Date().toISOString() // Force update timestamp
             })
             .eq('id', gameSession.id)
