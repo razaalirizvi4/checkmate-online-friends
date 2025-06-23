@@ -41,7 +41,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       .eq('id', user.id)
       .single();
 
-    if (error && error.code !== 'PGRST116') { // Ignore error if no profile found
+    if (error && error.code === 'PGRST116') { // Profile not found
+      // Try to get a username from Discord or fallback
+      let username = user.user_metadata?.user_name || user.user_metadata?.preferred_username || user.user_metadata?.full_name || user.email?.split('@')[0] || `user_${Date.now()}`;
+      let display_name = user.user_metadata?.full_name || user.user_metadata?.user_name || user.user_metadata?.preferred_username || 'New Player';
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          display_name,
+          username
+        })
+        .select('username, display_name')
+        .single();
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+      } else if (newProfile) {
+        setProfile(newProfile);
+      }
+    } else if (error) {
       console.error('Error fetching profile:', error);
     } else if (data) {
       setProfile(data);
@@ -49,8 +67,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    setLoading(true); // Ensure loading is true on mount
     const fetchSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('[AuthContext] Initial session:', session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -61,7 +81,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     fetchSessionAndProfile();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[AuthContext] Auth state change:', event, session);
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -76,7 +97,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
-    const redirectUrl = `${window.location.origin}/`;
+    const redirectUrl = `${window.location.origin}/play`;
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -102,6 +123,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const signInWithDiscord = async () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'discord',
+      options: {
+        redirectTo: `${window.location.origin}/play`,
+      },
     });
     return { error };
   };

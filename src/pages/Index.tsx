@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import MultiplayerChess from '../components/MultiplayerChess';
 import ChessGame from '../components/ChessGame';
@@ -20,16 +20,8 @@ import { Badge } from '@/components/ui/badge';
 import SocialLinks from '@/components/SocialLinks';
 
 const Index = () => {
-  const { user, signOut, loading, profile } = useAuth();
+  const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))] flex items-center justify-center">
-        <div className="text-[hsl(var(--bonk-text))] text-xl animate-pulse">Loading...</div>
-      </div>
-    );
-  }
 
   const handleSignOut = async () => {
     await signOut();
