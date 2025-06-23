@@ -44,6 +44,7 @@ const MultiplayerChess = () => {
   const [joiningGameId, setJoiningGameId] = useState('');
   const [availableGames, setAvailableGames] = useState<any[]>([]);
   const [isMakingMove, setIsMakingMove] = useState(false);
+  const [invitedGames, setInvitedGames] = useState<any[]>([]);
 
   const { user } = useAuth();
   const { toast } = useToast();
@@ -356,6 +357,11 @@ const MultiplayerChess = () => {
     });
   };
 
+  const getValidMovesForPlayerMemo = useCallback(() => {
+    if (!playerColor) return [];
+    return getValidMovesForPlayer(board, playerColor);
+  }, [board, playerColor]);
+
   const handleSquareClick = useCallback((position: Position) => {
     console.log('Square clicked:', position);
     console.log('Game state:', { gameSession, gameState, currentPlayer, playerColor, isMakingMove });
@@ -379,7 +385,16 @@ const MultiplayerChess = () => {
       const piece = board[selectedSquare.row][selectedSquare.col];
       
       if (piece && piece.color === currentPlayer) {
-        if (isValidMove(board, selectedSquare, position, piece)) {
+        // Only allow moves that are in getValidMovesForPlayer
+        const validMoves = getValidMovesForPlayer(board, currentPlayer);
+        const isMoveValid = validMoves.some(
+          (move) =>
+            move.from.row === selectedSquare.row &&
+            move.from.col === selectedSquare.col &&
+            move.to.row === position.row &&
+            move.to.col === position.col
+        );
+        if (isMoveValid) {
           console.log('Valid move, making move...');
           setIsMakingMove(true);
           const result = makeMove(board, selectedSquare, position);
@@ -452,7 +467,7 @@ const MultiplayerChess = () => {
               }
             });
         } else {
-          console.log('Invalid move');
+          console.log('Invalid move (would leave king in check)');
           setSelectedSquare(null);
         }
       }
@@ -664,7 +679,19 @@ const MultiplayerChess = () => {
   // Fetch available games when component mounts
   useEffect(() => {
     fetchAvailableGames();
-  }, []);
+    // Fetch invited games for the current user
+    if (user) {
+      supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('black_player_id', user.id)
+        .eq('game_status', 'active')
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error) setInvitedGames(data || []);
+        });
+    }
+  }, [user]);
 
   // Real-time subscription for available games
   useEffect(() => {
@@ -691,10 +718,23 @@ const MultiplayerChess = () => {
       )
       .subscribe();
 
+    // Also update invited games for the current user
+    if (user) {
+      supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('black_player_id', user.id)
+        .eq('game_status', 'active')
+        .order('created_at', { ascending: false })
+        .then(({ data, error }) => {
+          if (!error) setInvitedGames(data || []);
+        });
+    }
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   // Function to check current game state in database
   const checkCurrentGameState = async () => {
@@ -779,6 +819,67 @@ const MultiplayerChess = () => {
       setGameState('playing');
     }
   }, [gameSession]);
+
+  // Real-time subscription for game invites
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel('game_invite_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'game_sessions',
+        },
+        (payload) => {
+          const newData = payload.new as any;
+          // If the current user is invited as black and the game is active
+          if (
+            newData.black_player_id === user.id &&
+            newData.game_status === 'active' &&
+            showLobby // Only show if in lobby
+          ) {
+            toast({
+              title: 'Game Invite',
+              description: 'You have been invited to a game! Join as Black?',
+              action: (
+                <button
+                  style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, background: '#FFA500', color: '#222', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+                  onClick={() => {
+                    // Set up the game session for the joining player
+                    let parsedBoardState;
+                    if (typeof newData.board_state === 'string') {
+                      parsedBoardState = JSON.parse(newData.board_state);
+                    } else if (Array.isArray(newData.board_state)) {
+                      parsedBoardState = newData.board_state;
+                    } else {
+                      parsedBoardState = initialBoard;
+                    }
+                    setGameSession({
+                      ...newData,
+                      board_state: parsedBoardState,
+                      current_turn: newData.current_turn,
+                      game_status: newData.game_status
+                    });
+                    setBoard(parsedBoardState);
+                    setCurrentPlayer(newData.current_turn);
+                    setMoveHistory(newData.move_history || []);
+                    setPlayerColor('black');
+                    setShowLobby(false);
+                  }}
+                >Join Game</button>
+              ),
+              duration: 15000
+            });
+          }
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, showLobby]);
 
   if (!user) {
     return (
@@ -884,6 +985,57 @@ const MultiplayerChess = () => {
         </div>
         
         <FriendsList onInviteFriend={inviteFriend} />
+
+        {/* Invited Games Section */}
+        {invitedGames.length > 0 && (
+          <div className="mt-4">
+            <h3 className="text-xl font-semibold mb-2">Your Invites</h3>
+            <div className="space-y-2 max-h-64 overflow-y-auto p-2 rounded-lg bg-black/20">
+              {invitedGames.map((game) => (
+                <Card key={game.id} className="bg-black/30 backdrop-blur-sm border border-white/10">
+                  <CardContent className="flex items-center justify-between p-3">
+                    <div className="truncate pr-4">
+                      <p className="font-sans font-semibold text-sm text-white/90 truncate">
+                        ID: {game.id}
+                      </p>
+                      <p className="text-xs text-white/60">
+                        {new Date(game.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <Button
+                      onClick={() => {
+                        // Set up the game session for the joining player
+                        let parsedBoardState;
+                        if (typeof game.board_state === 'string') {
+                          parsedBoardState = JSON.parse(game.board_state);
+                        } else if (Array.isArray(game.board_state)) {
+                          parsedBoardState = game.board_state;
+                        } else {
+                          parsedBoardState = initialBoard;
+                        }
+                        setGameSession({
+                          ...game,
+                          board_state: parsedBoardState,
+                          current_turn: game.current_turn,
+                          game_status: game.game_status
+                        });
+                        setBoard(parsedBoardState);
+                        setCurrentPlayer(game.current_turn);
+                        setMoveHistory(game.move_history || []);
+                        setPlayerColor('black');
+                        setShowLobby(false);
+                      }}
+                      size="sm"
+                      className="bg-[hsl(var(--bonk-orange))] hover:bg-[hsl(var(--bonk-orange-dark))] text-black font-bold flex-shrink-0"
+                    >
+                      Join
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
