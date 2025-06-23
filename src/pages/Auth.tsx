@@ -20,7 +20,9 @@ const Auth = () => {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log('[Auth.tsx] useEffect', { authLoading, user });
     if (!authLoading && user) {
+      console.log('[Auth.tsx] Redirecting to /play');
       navigate('/play', { replace: true });
     }
   }, [user, authLoading, navigate]);

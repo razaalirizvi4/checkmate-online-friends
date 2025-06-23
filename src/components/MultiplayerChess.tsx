@@ -296,9 +296,20 @@ const MultiplayerChess = () => {
       setPlayerColor('white'); // Creator becomes white
       setShowLobby(false); // Show the chess board immediately
       
-    toast({
-      title: "Game Created",
-        description: "Waiting for opponent to join..."
+      // Show a toast with the game ID and a copy button
+      toast({
+        title: 'Game Created!',
+        description: `Game ID: ${data.id}`,
+        action: (
+          <button
+            style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, background: '#FFA500', color: '#222', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+            onClick={() => {
+              navigator.clipboard.writeText(data.id);
+              toast({ title: 'Copied!', description: 'Game ID copied to clipboard.' });
+            }}
+          >Copy</button>
+        ),
+        duration: 10000
       });
       return { data, error: null };
     } catch (error) {
@@ -655,32 +666,35 @@ const MultiplayerChess = () => {
     fetchAvailableGames();
   }, []);
 
-  // Test function to check database state
-  const testDatabaseState = async () => {
-    try {
-      console.log('Testing database state...');
-      
-      // Check all games
-      const { data: allGames, error: allGamesError } = await supabase
-        .from('game_sessions')
-        .select('*');
-      
-      console.log('All games:', allGames);
-      console.log('All games error:', allGamesError);
-      
-      // Check waiting games
-      const { data: waitingGames, error: waitingError } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('game_status', 'waiting');
-      
-      console.log('Waiting games:', waitingGames);
-      console.log('Waiting games error:', waitingError);
-      
-    } catch (error) {
-      console.error('Test error:', error);
-    }
-  };
+  // Real-time subscription for available games
+  useEffect(() => {
+    // Subscribe to INSERT and DELETE events on game_sessions
+    const channel = supabase
+      .channel('available_games_realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'game_sessions',
+        },
+        (payload) => {
+          // Only update if the game is in 'waiting' status or was removed
+          if (
+            (payload.eventType === 'INSERT' && payload.new?.game_status === 'waiting') ||
+            (payload.eventType === 'DELETE' && payload.old?.game_status === 'waiting') ||
+            (payload.eventType === 'UPDATE' && (payload.new?.game_status === 'waiting' || payload.old?.game_status === 'waiting'))
+          ) {
+            fetchAvailableGames();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   // Function to check current game state in database
   const checkCurrentGameState = async () => {
@@ -800,9 +814,6 @@ const MultiplayerChess = () => {
               <CardContent className="space-y-2 p-4 pt-0">
                 <Button onClick={createGame} className="w-full">
                   Create New Game
-                </Button>
-                <Button onClick={testDatabaseState} variant="outline" className="w-full">
-                  Test Database State
                 </Button>
               </CardContent>
             </Card>

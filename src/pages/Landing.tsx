@@ -8,7 +8,9 @@ const Landing = () => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
+    console.log('[Landing.tsx] useEffect', { loading, user });
     if (!loading && user) {
+      console.log('[Landing.tsx] Redirecting to /play');
       navigate('/play', { replace: true });
     }
   }, [user, loading, navigate]);

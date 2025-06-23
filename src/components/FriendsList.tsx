@@ -36,6 +36,53 @@ const FriendsList: React.FC<FriendsListProps> = ({ onInviteFriend }) => {
   useEffect(() => {
     if (user) {
       fetchFriendsAndRequests();
+
+      // Real-time subscription for friend requests and friends
+      const channel = supabase
+        .channel('friendships_realtime')
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'friendships',
+          },
+          (payload) => {
+            // Only refetch if the user is involved
+            const newData = payload.new as Partial<FriendshipRow> || {};
+            const oldData = payload.old as Partial<FriendshipRow> || {};
+            if (
+              newData.addressee_id === user.id ||
+              newData.requester_id === user.id ||
+              oldData.addressee_id === user.id ||
+              oldData.requester_id === user.id
+            ) {
+              fetchFriendsAndRequests();
+              // Show a toast if a new friend request is received
+              if (payload.eventType === 'INSERT' && newData.addressee_id === user.id && newData.status === 'pending') {
+                // Try to show the sender's username/display name
+                const fetchSenderProfile = async () => {
+                  const { data: senderProfile } = await supabase
+                    .from('profiles')
+                    .select('display_name, username')
+                    .eq('id', newData.requester_id)
+                    .single();
+                  toast({
+                    title: 'New Friend Request',
+                    description: senderProfile
+                      ? `You have a new friend request from ${senderProfile.display_name} (@${senderProfile.username})`
+                      : 'You have a new friend request!'
+                  });
+                };
+                fetchSenderProfile();
+              }
+            }
+          }
+        )
+        .subscribe();
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 
