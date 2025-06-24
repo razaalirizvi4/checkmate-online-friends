@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import SocialLinks from '@/components/SocialLinks';
 
 const Index = () => {
-  const { user, signOut, profile } = useAuth();
+  const { user, signOut, profile, loading } = useAuth();
   const navigate = useNavigate();
 
   // Controlled tab state
@@ -28,6 +28,14 @@ const Index = () => {
   React.useEffect(() => {
     setSelectedTab(user ? "multiplayer" : "singleplayer");
   }, [user]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <span className="text-xl text-[hsl(var(--bonk-text))] animate-pulse">Loading...</span>
+      </div>
+    );
+  }
 
   const handleSignOut = async () => {
     await signOut();
