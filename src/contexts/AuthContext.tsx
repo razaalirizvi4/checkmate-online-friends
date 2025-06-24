@@ -35,102 +35,72 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [profile, setProfile] = useState<Profile | null>(null);
 
   const fetchProfile = async (user: User) => {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('username, display_name')
-        .eq('id', user.id)
-        .single();
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('username, display_name')
+      .eq('id', user.id)
+      .single();
 
-      if (error && error.code === 'PGRST116') { // Profile not found
-        // Try to get a username from Discord or fallback
-        const username = user.user_metadata?.full_name || user.email?.split('@')[0] || `user_${Date.now()}`;
-        const display_name = user.user_metadata?.custom_claims?.global_name || user.user_metadata?.full_name || 'New Player';
-        
-        const { data: newProfile, error: insertError } = await supabase
-          .from('profiles')
-          .insert({
-            id: user.id,
-            display_name,
-            username
-          })
-          .select('username, display_name')
-          .single();
-          
-        if (insertError) {
-          console.error('Error creating profile:', insertError);
-        } else if (newProfile) {
-          setProfile(newProfile);
-        }
-      } else if (error) {
-        console.error('Error fetching profile:', error);
-      } else if (data) {
-        setProfile(data);
+    if (error && error.code === 'PGRST116') { // Profile not found
+      // Try to get a username from Discord or fallback
+      const username = user.user_metadata?.full_name || user.email?.split('@')[0] || `user_${Date.now()}`;
+      const display_name = user.user_metadata?.custom_claims.global_name || 'New Player';
+      const { data: newProfile, error: insertError } = await supabase
+        .from('profiles')
+        .insert({
+          id: user.id,
+          display_name,
+          username
+        })
+        .select('username, display_name')
+        .single();
+      if (insertError) {
+        console.error('Error creating profile:', insertError);
+      } else if (newProfile) {
+        setProfile(newProfile);
       }
-    } catch (error) {
-      console.error('Error in fetchProfile:', error);
+    } else if (error) {
+      console.error('Error fetching profile:', error);
+    } else if (data) {
+      setProfile(data);
     }
   };
 
   useEffect(() => {
-    let isMounted = true;
-
+    setLoading(true) // Ensure loading is true on mount
     const fetchSessionAndProfile = async () => {
-      try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        console.log('[AuthContext] Initial session:', session);
-        
-        if (error) {
-          console.error('Error fetching session:', error);
-        }
-
-        if (isMounted) {
-          setSession(session);
-          setUser(session?.user ?? null);
-          
-          if (session?.user) {
-            await fetchProfile(session.user);
-          }
-          
-          setLoading(false);
-        }
-      } catch (error) {
-        console.error('Error in fetchSessionAndProfile:', error);
-        if (isMounted) {
-          setLoading(false);
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[AuthContext] Initial session:', session);
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user);
+      } else {
+        // Fallback: try to get user directly if session is null (e.g., after OAuth redirect)
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          setUser(userData.user);
+          await fetchProfile(userData.user);
         }
       }
+      setLoading(false);
     };
 
     fetchSessionAndProfile();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       console.log('[AuthContext] Auth state change:', event, session);
-      
-      if (!isMounted) return;
-
-      try {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          await fetchProfile(session.user);
-        } else {
-          setProfile(null);
-        }
-      } catch (error) {
-        console.error('Error handling auth state change:', error);
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+      setSession(session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        await fetchProfile(session.user);
+      } else {
+        setProfile(null);
       }
+      setLoading(false);
     });
 
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
   const signUp = async (email: string, password: string, fullName: string) => {
@@ -168,16 +138,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    try {
-      await supabase.auth.signOut();
-    } catch (error) {
-      console.error('Error signing out:', error);
-    } finally {
-      setProfile(null);
-      setLoading(false);
-      setSession(null);
-      setUser(null);
-    }
+    await supabase.auth.signOut();
+    setProfile(null);
+    setLoading(false);
+    setSession(null);
+    setUser(null);
   };
 
   const value = {
