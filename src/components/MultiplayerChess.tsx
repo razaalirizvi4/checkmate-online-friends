@@ -447,6 +447,12 @@ useEffect(() => {
           const newTurn = currentPlayer === 'white' ? 'black' : 'white';
           const newMoveHistory = [...moveHistory, result.moveNotation];
           
+          // OPTIMISTIC UPDATE: Update local state immediately for instant UI feedback
+          setBoard(result.newBoard);
+          setCurrentPlayer(newTurn);
+          setMoveHistory(newMoveHistory);
+          setSelectedSquare(null);
+          
           console.log('Updating database with move:', {
             board_state: result.newBoard,
             current_turn: newTurn,
@@ -495,16 +501,25 @@ useEffect(() => {
                   description: "Failed to make move",
                   variant: "destructive"
                 });
+                // Revert optimistic update on error
+                setBoard(board);
+                setCurrentPlayer(currentPlayer);
+                setMoveHistory(moveHistory);
                 setIsMakingMove(false);
               } else {
                 console.log('✅ Move successfully updated in database');
-                setSelectedSquare(null);
-                setIsMakingMove(false); // Reset immediately after successful database update
+                // Reset isMakingMove after successful DB update
+                setIsMakingMove(false);
                 
-                // The real-time subscription should handle updating the board state automatically
-                console.log('🔄 Waiting for real-time update to refresh board state...');
+                // The real-time subscription should handle syncing with other players
+                console.log('🔄 Waiting for real-time update to sync with other players...');
               }
             });
+          
+          // FALLBACK: Ensure isMakingMove is reset even if real-time update fails
+          setTimeout(() => {
+            setIsMakingMove(false);
+          }, 3000);
         } else {
           console.log('❌ Invalid move');
           setSelectedSquare(null);
@@ -1282,13 +1297,13 @@ const joinGame = async (gameId: string) => {
             </code>
             <Button
               onClick={() => {
-                navigator.clipboard.writeText(gameSession?.id || '');
-                toast({ title: 'Copied!', description: 'Game ID copied to clipboard.' });
+                setShowWaiting(false);
+                setShowLobby(true);
               }}
               size="sm"
               variant="outline"
             >
-              Copy
+              Back to Lobby
             </Button>
           </div>
           <p className="text-sm text-muted-foreground">
