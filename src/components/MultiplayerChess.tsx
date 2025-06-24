@@ -202,6 +202,79 @@ useEffect(() => {
   };
 }, [gameSession?.id, user?.id, moveHistory.length]); // Fixed dependencies
 
+// Add a polling fallback for when real-time fails
+useEffect(() => {
+  if (!gameSession || gameSession.game_status !== 'waiting') return;
+  
+  console.log('🔄 Starting polling fallback for waiting game:', gameSession.id);
+  
+  const pollInterval = setInterval(async () => {
+    console.log('🔄 Polling game state...');
+    try {
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameSession.id)
+        .single();
+        
+      if (error) {
+        console.error('🔄 Polling error:', error);
+        return;
+      }
+      
+      console.log('🔄 Polled game data:', {
+        game_status: data.game_status,
+        black_player_id: data.black_player_id,
+        current_gameSession_status: gameSession.game_status
+      });
+      
+      // If the game status changed or black player joined
+      if (data.game_status !== gameSession.game_status || 
+          data.black_player_id !== gameSession.black_player_id) {
+        
+        console.log('🔄 POLLING DETECTED CHANGE! Updating gameSession');
+        
+        // Parse board state
+        let parsedBoardState: (ChessPiece | null)[][];
+        if (typeof data.board_state === 'string') {
+          parsedBoardState = JSON.parse(data.board_state);
+        } else if (Array.isArray(data.board_state)) {
+          parsedBoardState = data.board_state as unknown as (ChessPiece | null)[][];
+        } else {
+          parsedBoardState = initialBoard;
+        }
+        
+        // Update the game session
+        setGameSession({
+          ...data,
+          board_state: parsedBoardState,
+          current_turn: data.current_turn as 'white' | 'black',
+          game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+        });
+        
+        setBoard(parsedBoardState);
+        setCurrentPlayer(data.current_turn as 'white' | 'black');
+        setMoveHistory(data.move_history || []);
+        
+        // Show notification
+        if (data.game_status === 'active' && data.black_player_id) {
+          toast({
+            title: "Game Started!",
+            description: "Your opponent has joined. Let's play!",
+          });
+        }
+      }
+    } catch (error) {
+      console.error('🔄 Polling error:', error);
+    }
+  }, 2000); // Poll every 2 seconds
+  
+  return () => {
+    console.log('🔄 Stopping polling fallback');
+    clearInterval(pollInterval);
+  };
+}, [gameSession?.id, gameSession?.game_status, gameSession?.black_player_id]);
+
   const createGame = async () => {
     if (!user) return;
 
