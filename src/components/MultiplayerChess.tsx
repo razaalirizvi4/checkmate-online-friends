@@ -41,6 +41,7 @@ const MultiplayerChess = () => {
   }>({ white: [], black: [] });
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [showLobby, setShowLobby] = useState(true);
+  const [showWaiting, setShowWaiting] = useState(false);
   const [joiningGameId, setJoiningGameId] = useState('');
   const [availableGames, setAvailableGames] = useState<any[]>([]);
   const [isMakingMove, setIsMakingMove] = useState(false);
@@ -140,6 +141,7 @@ const MultiplayerChess = () => {
             if (isWhitePlayer || isBlackPlayer) {
               if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
                 setShowLobby(false);
+                setShowWaiting(false);
                 // Show turn change notification
                 const newTurn = updatedSession.current_turn as 'white' | 'black';
                 if (newTurn === (isWhitePlayer ? 'white' : 'black')) {
@@ -230,7 +232,9 @@ const MultiplayerChess = () => {
       setCurrentPlayer(data.current_turn as 'white' | 'black');
       setMoveHistory(data.move_history || []);
       setPlayerColor('white'); // Creator becomes white
-      setShowLobby(false); // Show the chess board immediately
+      // Show waiting screen for game creator
+      setShowLobby(false);
+      setShowWaiting(true);
       
       // Show a toast with the game ID and a copy button
       toast({
@@ -402,7 +406,10 @@ const MultiplayerChess = () => {
               } else {
                 console.log('Move successfully updated in database');
                 setSelectedSquare(null);
-                setIsMakingMove(false);
+                // Fallback: ensure isMakingMove is reset if real-time update is slow
+                setTimeout(() => {
+                  setIsMakingMove(false);
+                }, 2000);
               }
             });
         } else {
@@ -935,6 +942,47 @@ const MultiplayerChess = () => {
             </div>
           </div>
         )}
+      </div>
+    );
+  }
+
+  if (showWaiting) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-64 space-y-6 p-8 text-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[hsl(var(--bonk-orange))]"></div>
+        <div className="space-y-4">
+          <h3 className="text-2xl font-bold">Waiting for Opponent</h3>
+          <p className="text-muted-foreground max-w-md">
+            Share this game ID with a friend to start playing:
+          </p>
+          <div className="flex items-center gap-2 justify-center">
+            <code className="px-4 py-2 bg-black/20 rounded-lg font-mono text-lg">
+              {gameSession?.id}
+            </code>
+            <Button
+              onClick={() => {
+                navigator.clipboard.writeText(gameSession?.id || '');
+                toast({ title: 'Copied!', description: 'Game ID copied to clipboard.' });
+              }}
+              size="sm"
+              variant="outline"
+            >
+              Copy
+            </Button>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            You'll be playing as White. The game will start automatically when your opponent joins.
+          </p>
+        </div>
+        <Button
+          onClick={() => {
+            setShowWaiting(false);
+            setShowLobby(true);
+          }}
+          variant="outline"
+        >
+          Back to Lobby
+        </Button>
       </div>
     );
   }
