@@ -200,7 +200,7 @@ useEffect(() => {
     console.log('🔍 Cleaning up real-time subscription for game:', gameSession.id);
     supabase.removeChannel(channel);
   };
-}, [gameSession?.id, user?.id, moveHistory.length]); // Fixed dependencies
+}, [gameSession?.id, user?.id, moveHistory.length]); // Fixed: Added moveHistory.length back
 
 // Add a polling fallback for when real-time fails
 useEffect(() => {
@@ -273,7 +273,7 @@ useEffect(() => {
     console.log('🔄 Stopping polling fallback');
     clearInterval(pollInterval);
   };
-}, [gameSession?.id, gameSession?.game_status, gameSession?.black_player_id]);
+}, [gameSession?.id, gameSession?.game_status, gameSession?.black_player_id, toast]);
 
   const createGame = async () => {
     if (!user) return;
@@ -419,53 +419,27 @@ useEffect(() => {
       user: user?.id 
     });
     
-    console.log('🎯 Full gameSession object:', gameSession);
-    
-    if (!gameSession) {
-      console.log('❌ No gameSession found');
+    if (!gameSession || gameSession.game_status !== 'active') {
+      console.log('❌ Game not active - gameSession:', !!gameSession, 'status:', gameSession?.game_status);
       return;
     }
-    
-    if (gameSession.game_status !== 'active') {
-      console.log('❌ Game status is not active:', gameSession.game_status);
-      return;
-    }
-    
-    if (gameSession.black_player_id == null) {
-      console.log('❌ No black player yet - black_player_id:', gameSession.black_player_id);
-      return;
-    }
-    
-    console.log('✅ All game checks passed, continuing with move logic');
 
     if (currentPlayer !== playerColor) {
-      console.log('Not your turn - currentPlayer:', currentPlayer, 'playerColor:', playerColor);
+      console.log('❌ Not your turn - currentPlayer:', currentPlayer, 'playerColor:', playerColor);
       return;
     }
 
     if (isMakingMove) {
-      console.log('❌ Already making a move, please wait. isMakingMove:', isMakingMove);
+      console.log('❌ Already making a move, please wait');
       return;
     }
 
-    console.log('🔄 Current state:', { selectedSquare, isMakingMove });
-
     if (selectedSquare) {
-      console.log('🎯 Attempting to move from', selectedSquare, 'to', position);
       const piece = board[selectedSquare.row][selectedSquare.col];
       
       if (piece && piece.color === currentPlayer) {
-        console.log('🎯 Valid piece selected, checking move validity...');
-        // Only allow moves that are in getValidMovesForPlayer
-        const validMoves = getValidMovesForPlayer(board, currentPlayer);
-        const isMoveValid = validMoves.some(
-          (move) =>
-            move.from.row === selectedSquare.row &&
-            move.from.col === selectedSquare.col &&
-            move.to.row === position.row &&
-            move.to.col === position.col
-        );
-        if (isMoveValid) {
+        // Use the simpler isValidMove check from the old working code
+        if (isValidMove(board, selectedSquare, position, piece)) {
           console.log('✅ Valid move, making move...');
           setIsMakingMove(true);
           const result = makeMove(board, selectedSquare, position);
@@ -509,12 +483,7 @@ useEffect(() => {
               current_turn: newTurn,
               move_history: newMoveHistory,
               game_status: result.gameState === 'checkmate' ? 'completed' : 'active',
-              winner:
-                result.gameState === 'checkmate'
-                  ? (currentPlayer === 'white' ? 'white' : 'black')
-                  : result.gameState === 'draw'
-                  ? 'draw'
-                  : null,
+              winner: result.gameState === 'checkmate' ? user?.id : null,
               updated_at: new Date().toISOString() // Force update timestamp
             })
             .eq('id', gameSession.id)
@@ -537,29 +506,20 @@ useEffect(() => {
               }
             });
         } else {
-          console.log('❌ Invalid move (would leave king in check or invalid)');
+          console.log('❌ Invalid move');
           setSelectedSquare(null);
-          // Ensure isMakingMove stays false for invalid moves
         }
-      } else {
-        console.log('❌ Invalid or empty piece at selected square');
-        setSelectedSquare(null);
       }
     } else {
-      console.log('🎯 Selecting new piece at', position);
       const piece = board[position.row][position.col];
       if (piece && piece.color === currentPlayer) {
-        console.log('✅ Valid piece selected:', piece);
+        console.log('✅ Selecting piece:', piece);
         setSelectedSquare(position);
-        // Make sure isMakingMove is false when selecting a piece
-        setIsMakingMove(false);
       } else {
-        console.log('❌ No valid piece to select at', position);
-        setSelectedSquare(null);
-        setIsMakingMove(false);
+        console.log('❌ No valid piece to select');
       }
     }
-  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove]);
+  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove, toast, user?.id]);
 
   // Function to join an existing game
 const joinGame = async (gameId: string) => {
@@ -1050,7 +1010,7 @@ const joinGame = async (gameId: string) => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, showLobby]);
+  }, [user, showLobby, toast]);
 
   // Manual refresh fallback
   const manualRefreshGameState = async () => {
