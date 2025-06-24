@@ -429,175 +429,254 @@ const MultiplayerChess = () => {
   }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove]);
 
   // Function to join an existing game
-  const joinGame = async (gameId: string) => {
-    if (!user || !gameId.trim()) return;
+const joinGame = async (gameId: string) => {
+  if (!user || !gameId.trim()) {
+    console.log('Missing user or gameId:', { user: !!user, gameId: gameId.trim() });
+    return;
+  }
 
-    console.log('Attempting to join game:', gameId);
+  console.log('Attempting to join game:', gameId);
+  console.log('User ID:', user.id);
+  console.log('Supabase client status:', !!supabase);
 
-    try {
-      // First, check if the game exists (without status filter to see what's there)
-      const { data: existingGame, error: fetchError } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('id', gameId.trim())
-        .single();
+  try {
+    // Added a timeout to catch hanging requests
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Request timed out')), 10000)
+    );
 
-      console.log('Fetch result for join:', { existingGame, fetchError });
+    // First, check if the game exists (without status filter to see what's there)
+    console.log('Starting database query...');
+    
+    const queryPromise = supabase
+      .from('game_sessions')
+      .select('*')
+      .eq('id', gameId.trim())
+      .single();
 
-      if (fetchError) {
-        console.error('Fetch error when joining:', fetchError);
-        toast({
-          title: "Game Not Found",
-          description: `Error: ${fetchError.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
+    const { data: existingGame, error: fetchError } = await Promise.race([
+      queryPromise,
+      timeoutPromise
+    ]) as any;
 
-      if (!existingGame) {
-        toast({
-          title: "Game Not Found",
-          description: "No game found with that ID.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('Found game:', {
+    console.log('Database query completed');
+    console.log('Fetch result for join:', { 
+      existingGame: existingGame ? {
         id: existingGame.id,
         status: existingGame.game_status,
         white_player: existingGame.white_player_id,
         black_player: existingGame.black_player_id
+      } : null, 
+      fetchError 
+    });
+
+    if (fetchError) {
+      console.error('Fetch error when joining:', fetchError);
+      console.log('Error details:', {
+        message: fetchError.message,
+        code: fetchError.code,
+        hint: fetchError.hint,
+        details: fetchError.details
       });
-
-      // Check if user is already in the game
-      if (existingGame.white_player_id === user.id) {
-        toast({
-          title: "Already in Game",
-          description: "You are already the white player in this game.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      if (existingGame.black_player_id === user.id) {
-        toast({
-          title: "Already in Game",
-          description: "You are already the black player in this game.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Check if game is already full
-      if (existingGame.white_player_id && existingGame.black_player_id) {
-        toast({
-          title: "Game Full",
-          description: "This game already has two players.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      // Determine which color to assign
-      let updateData: any = {};
-
-      console.log('Current game state:', {
-        white_player_id: existingGame.white_player_id,
-        black_player_id: existingGame.black_player_id
-      });
-
-      if (!existingGame.black_player_id) {
-        // Black player slot is empty - joiner becomes black
-        console.log('Black player slot empty - assigning black');
-        updateData = {
-          black_player_id: user.id,
-          game_status: 'active'
-        };
-      } else {
-        toast({
-          title: "Game Full",
-          description: "This game already has two players.",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('Update data:', updateData);
-
-      // Join the game
-      const { data: updateResult, error: updateError } = await supabase
-        .from('game_sessions')
-        .update(updateData)
-        .eq('id', gameId.trim())
-        .select()
-        .single();
-
-      console.log('Update result:', { updateResult, updateError });
-
-      if (updateError) {
-        console.error('Update error when joining:', updateError);
-        toast({
-          title: "Error",
-          description: `Failed to join the game: ${updateError.message}`,
-          variant: "destructive"
-        });
-        return;
-      }
-
-      console.log('Successfully updated game:', updateResult);
-
-      // Set up the game session for the joining player
-      try {
-        // Handle board state parsing - it might be an object or JSON string
-        let parsedBoardState: (ChessPiece | null)[][];
-        
-        if (typeof updateResult.board_state === 'string') {
-          parsedBoardState = JSON.parse(updateResult.board_state) as (ChessPiece | null)[][];
-        } else if (Array.isArray(updateResult.board_state)) {
-          parsedBoardState = updateResult.board_state as unknown as (ChessPiece | null)[][];
-        } else {
-          console.error('Invalid board state format from database:', updateResult.board_state);
-          parsedBoardState = initialBoard;
-        }
-        
-        setGameSession({
-          ...updateResult,
-          board_state: parsedBoardState,
-          current_turn: updateResult.current_turn as 'white' | 'black',
-          game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-        });
-        setBoard(parsedBoardState);
-        setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
-        setMoveHistory(updateResult.move_history || []);
-        // Set playerColor to black since we're joining as black
-        setPlayerColor('black');
-        setShowLobby(false);
-        
-        toast({
-          title: "Success!",
-          description: "You have joined the game as Black!",
-        });
-      } catch (error) {
-        console.error('Error parsing board state when joining:', error);
-        console.log('Raw board state from database:', updateResult.board_state);
-        console.log('Board state type:', typeof updateResult.board_state);
-        toast({
-          title: "Error",
-          description: "Failed to initialize game board",
-          variant: "destructive"
-        });
-      }
       
-    } catch (error) {
-      console.error('Unexpected error when joining game:', error);
+      toast({
+        title: "Game Not Found",
+        description: `Error: ${fetchError.message}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!existingGame) {
+      console.log('No game found with ID:', gameId);
+      toast({
+        title: "Game Not Found",
+        description: "No game found with that ID.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('Found game:', {
+      id: existingGame.id,
+      status: existingGame.game_status,
+      white_player: existingGame.white_player_id,
+      black_player: existingGame.black_player_id,
+      created_at: existingGame.created_at
+    });
+
+    // Check if user is already in the game
+    if (existingGame.white_player_id === user.id) {
+      console.log('User is already white player');
+      toast({
+        title: "Already in Game",
+        description: "You are already the white player in this game.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (existingGame.black_player_id === user.id) {
+      console.log('User is already black player');
+      toast({
+        title: "Already in Game",
+        description: "You are already the black player in this game.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Check if game is already full
+    if (existingGame.white_player_id && existingGame.black_player_id) {
+      console.log('Game is full - both players assigned');
+      toast({
+        title: "Game Full",
+        description: "This game already has two players.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Determine which color to assign
+    let updateData: any = {};
+
+    console.log('Current game state:', {
+      white_player_id: existingGame.white_player_id,
+      black_player_id: existingGame.black_player_id,
+      game_status: existingGame.game_status
+    });
+
+    if (!existingGame.black_player_id) {
+      // Black player slot is empty - joiner becomes black
+      console.log('Black player slot empty - assigning black');
+      updateData = {
+        black_player_id: user.id,
+        game_status: 'active'
+      };
+    } else {
+      console.log('Unexpected state - both slots should not be full at this point');
+      toast({
+        title: "Game Full",
+        description: "This game already has two players.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('Update data:', updateData);
+    console.log('Updating game with ID:', gameId.trim());
+
+    // Join the game
+    const updateQueryPromise = supabase
+      .from('game_sessions')
+      .update(updateData)
+      .eq('id', gameId.trim())
+      .select()
+      .single();
+
+    const { data: updateResult, error: updateError } = await Promise.race([
+      updateQueryPromise,
+      timeoutPromise
+    ]) as any;
+
+    console.log('Update completed');
+    console.log('Update result:', { 
+      updateResult: updateResult ? {
+        id: updateResult.id,
+        status: updateResult.game_status,
+        white_player: updateResult.white_player_id,
+        black_player: updateResult.black_player_id
+      } : null, 
+      updateError 
+    });
+
+    if (updateError) {
+      console.error('Update error when joining:', updateError);
+      console.log('Update error details:', {
+        message: updateError.message,
+        code: updateError.code,
+        hint: updateError.hint,
+        details: updateError.details
+      });
+      
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: `Failed to join the game: ${updateError.message}`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log('Successfully updated game:', updateResult.id);
+
+    // Set up the game session for the joining player
+    try {
+      console.log('Setting up game session...');
+      
+      // Handle board state parsing - it might be an object or JSON string
+      let parsedBoardState: (ChessPiece | null)[][];
+      
+      console.log('Board state type:', typeof updateResult.board_state);
+      console.log('Board state value:', updateResult.board_state);
+      
+      if (typeof updateResult.board_state === 'string') {
+        console.log('Parsing board state from string');
+        parsedBoardState = JSON.parse(updateResult.board_state) as (ChessPiece | null)[][];
+      } else if (Array.isArray(updateResult.board_state)) {
+        console.log('Using board state as array');
+        parsedBoardState = updateResult.board_state as unknown as (ChessPiece | null)[][];
+      } else {
+        console.error('Invalid board state format from database:', updateResult.board_state);
+        parsedBoardState = initialBoard;
+      }
+      
+      console.log('Parsed board state successfully');
+      
+      setGameSession({
+        ...updateResult,
+        board_state: parsedBoardState,
+        current_turn: updateResult.current_turn as 'white' | 'black',
+        game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+      });
+      setBoard(parsedBoardState);
+      setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
+      setMoveHistory(updateResult.move_history || []);
+      // Set playerColor to black since we're joining as black
+      setPlayerColor('black');
+      setShowLobby(false);
+      
+      console.log('Game session setup complete');
+      
+      toast({
+        title: "Success!",
+        description: "You have joined the game as Black!",
+      });
+      
+    } catch (parseError) {
+      console.error('Error parsing board state when joining:', parseError);
+      console.log('Raw board state from database:', updateResult.board_state);
+      console.log('Board state type:', typeof updateResult.board_state);
+      
+      toast({
+        title: "Error",
+        description: "Failed to initialize game board",
         variant: "destructive"
       });
     }
-  };
+    
+  } catch (error) {
+    console.error('Unexpected error when joining game:', error);
+    console.log('Error stack:', error.stack);
+    console.log('Error name:', error.name);
+    console.log('Error message:', error.message);
+    
+    toast({
+      title: "Error",
+      description: `An unexpected error occurred: ${error.message}`,
+      variant: "destructive"
+    });
+  }
+};
 
   // Function to fetch available games
   const fetchAvailableGames = async () => {
