@@ -200,7 +200,7 @@ useEffect(() => {
     console.log('🔍 Cleaning up real-time subscription for game:', gameSession.id);
     supabase.removeChannel(channel);
   };
-}, [gameSession?.id, user?.id, moveHistory.length]); // Fixed: Added moveHistory.length back
+}, [gameSession?.id, user?.id]); // Fixed: Removed moveHistory.length to prevent subscription restart
 
 // Add a polling fallback for when real-time fails
 useEffect(() => {
@@ -1079,6 +1079,97 @@ const joinGame = async (gameId: string) => {
     setSelectedSquare(null);
     toast({ title: 'Move state reset', description: 'You can now make moves again.' });
   };
+
+  // Function to reload board state from database (fallback mechanism)
+  const reloadBoardState = useCallback(async () => {
+    if (!gameSession?.id) return;
+    
+    console.log('🔄 Reloading board state from database...');
+    try {
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameSession.id)
+        .single();
+        
+      if (error) {
+        console.error('❌ Error reloading board state:', error);
+        return;
+      }
+      
+      if (!data) {
+        console.log('❌ No game data found during reload');
+        return;
+      }
+      
+      // Parse board state
+      let parsedBoardState: (ChessPiece | null)[][];
+      try {
+        if (typeof data.board_state === 'string') {
+          parsedBoardState = JSON.parse(data.board_state);
+        } else if (Array.isArray(data.board_state)) {
+          parsedBoardState = data.board_state as unknown as (ChessPiece | null)[][];
+        } else {
+          console.error('Invalid board state format during reload:', data.board_state);
+          return;
+        }
+      } catch (parseError) {
+        console.error('❌ Error parsing board state during reload:', parseError);
+        return;
+      }
+      
+      // Check if we have newer data (by move count)
+      const currentMoveCount = moveHistory.length;
+      const dbMoveCount = data.move_history?.length || 0;
+      
+      if (dbMoveCount > currentMoveCount) {
+        console.log('🔄 Found newer board state, updating...', {
+          currentMoves: currentMoveCount,
+          dbMoves: dbMoveCount
+        });
+        
+        // Update all game state
+        setGameSession({
+          ...gameSession,
+          ...data,
+          board_state: parsedBoardState,
+          current_turn: data.current_turn as 'white' | 'black',
+          game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+        });
+        
+        setBoard(parsedBoardState);
+        setCurrentPlayer(data.current_turn as 'white' | 'black');
+        setMoveHistory(data.move_history || []);
+        
+        // Reset any stuck states
+        setIsMakingMove(false);
+        setSelectedSquare(null);
+        
+        console.log('✅ Board state reloaded successfully');
+      } else {
+        console.log('🔄 Board state is already up to date');
+      }
+    } catch (error) {
+      console.error('❌ Error during board state reload:', error);
+    }
+  }, [gameSession?.id, moveHistory.length, gameSession]);
+
+  // Periodic board reload for active games (fallback for missed real-time updates)
+  useEffect(() => {
+    if (!gameSession || gameSession.game_status !== 'active') return;
+    
+    console.log('🕒 Starting periodic board reload for active game:', gameSession.id);
+    
+    const reloadInterval = setInterval(() => {
+      console.log('🕒 Periodic board reload check...');
+      reloadBoardState();
+    }, 10000); // Check every 10 seconds
+    
+    return () => {
+      console.log('🕒 Stopping periodic board reload');
+      clearInterval(reloadInterval);
+    };
+  }, [gameSession?.id, gameSession?.game_status, reloadBoardState]);
 
   // Exit game handler
   const handleExitGame = async () => {
