@@ -105,8 +105,11 @@ const MultiplayerChess = () => {
             const currentMoveCount = moveHistory.length;
             const newMoveCount = updatedSession.move_history?.length || 0;
             
-            if (newMoveCount >= currentMoveCount) {
-              // Always update the game session and board state from real-time updates
+            // Always update if game_status changed, or if move count increased
+            if (
+              newMoveCount > currentMoveCount ||
+              updatedSession.game_status !== (gameSession?.game_status ?? 'waiting')
+            ) {
               setGameSession(prevSession => ({
                 ...prevSession,
                 ...updatedSession,
@@ -114,8 +117,6 @@ const MultiplayerChess = () => {
                 current_turn: updatedSession.current_turn as 'white' | 'black',
                 game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
               }));
-              
-              // Always update the board state
               setBoard(parsedBoardState);
               setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
               setMoveHistory(updatedSession.move_history || []);
@@ -177,7 +178,7 @@ const MultiplayerChess = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameSession, user?.id, gameSession?.game_status]);
+  }, [gameSession, user?.id]);
 
   const createGame = async () => {
     if (!user) return;
