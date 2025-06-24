@@ -107,20 +107,13 @@ const MultiplayerChess = () => {
             
             if (newMoveCount >= currentMoveCount) {
               // Always update the game session and board state from real-time updates
-              setGameSession(prevSession => {
-                const updated = {
-                  ...prevSession,
-                  ...updatedSession,
-                  board_state: parsedBoardState,
-                  current_turn: updatedSession.current_turn as 'white' | 'black',
-                  game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-                };
-                if (updated.game_status === 'active') {
-                  console.log('[RT] Game session set to ACTIVE:', updated);
-                  console.log('[RT] current_turn:', updated.current_turn, 'playerColor:', playerColor);
-                }
-                return updated;
-              });
+              setGameSession(prevSession => ({
+                ...prevSession,
+                ...updatedSession,
+                board_state: parsedBoardState,
+                current_turn: updatedSession.current_turn as 'white' | 'black',
+                game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+              }));
               
               // Always update the board state
               setBoard(parsedBoardState);
@@ -135,16 +128,6 @@ const MultiplayerChess = () => {
               else setPlayerColor(null);
               
               console.log('Board state updated to:', parsedBoardState);
-              
-              if (updatedSession.game_status === 'active') {
-                console.log('[RT] Post-update state:', {
-                  current_turn: updatedSession.current_turn,
-                  playerColor,
-                  game_status: updatedSession.game_status,
-                  board,
-                  moveHistory
-                });
-              }
             } else {
               console.log('Ignoring older board state update');
             }
@@ -194,7 +177,7 @@ const MultiplayerChess = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameSession, user?.id]);
+  }, [gameSession, user?.id, gameSession.game_status]);
 
   const createGame = async () => {
     if (!user) return;
@@ -254,6 +237,7 @@ const MultiplayerChess = () => {
       setShowLobby(false);
       //setShowWaiting(true);
       
+      
       // Show a toast with the game ID and a copy button
       toast({
         title: 'Game Created!',
@@ -269,11 +253,6 @@ const MultiplayerChess = () => {
         ),
         duration: 10000
       });
-      
-      if (data.game_status === 'active') {
-        console.log('[CREATE] Game session set to ACTIVE:', data);
-        console.log('[CREATE] current_turn:', data.current_turn, 'playerColor:', playerColor);
-      }
       return { data, error: null };
     } catch (error) {
       console.error('Error parsing board state after game creation:', error);
@@ -576,6 +555,7 @@ const joinGame = async (gameId: string) => {
         black_player_id: user.id,
         game_status: 'active'
       };
+      
     } else {
       console.log('Unexpected state - both slots should not be full at this point');
       toast({
@@ -655,19 +635,11 @@ const joinGame = async (gameId: string) => {
       
       console.log('Parsed board state successfully');
       
-      setGameSession(prevSession => {
-        const updated = {
-          ...prevSession,
-          ...updateResult,
-          board_state: parsedBoardState,
-          current_turn: updateResult.current_turn as 'white' | 'black',
-          game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-        };
-        if (updated.game_status === 'active') {
-          console.log('[JOIN] Game session set to ACTIVE:', updated);
-          console.log('[JOIN] current_turn:', updated.current_turn, 'playerColor:', playerColor);
-        }
-        return updated;
+      setGameSession({
+        ...updateResult,
+        board_state: parsedBoardState,
+        current_turn: updateResult.current_turn as 'white' | 'black',
+        game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
       });
       setBoard(parsedBoardState);
       setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
@@ -961,26 +933,44 @@ const joinGame = async (gameId: string) => {
       else if (isBlackPlayer) setPlayerColor('black');
       else setPlayerColor(null);
       toast({ title: 'Game state refreshed!' });
-      
-      if (data.game_status === 'active') {
-        console.log('[REFRESH] Game session set to ACTIVE:', data);
-        console.log('[REFRESH] current_turn:', data.current_turn, 'playerColor:', playerColor);
-      }
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to refresh game state', variant: 'destructive' });
     }
   };
 
   // Exit game handler
-  const handleExitGame = () => {
-    setGameSession(null);
-    setBoard(initialBoard);
-    setCurrentPlayer('white');
-    setMoveHistory([]);
-    setCapturedPieces({ white: [], black: [] });
-    setPlayerColor(null);
-    setShowLobby(true);
-    setShowWaiting(false);
+  const handleExitGame = async () => {
+    if (!gameSession || !playerColor) {
+      setGameSession(null);
+      setBoard(initialBoard);
+      setCurrentPlayer('white');
+      setMoveHistory([]);
+      setCapturedPieces({ white: [], black: [] });
+      setPlayerColor(null);
+      setShowLobby(true);
+      setShowWaiting(false);
+      return;
+    }
+
+    // Only update DB if game is active and both players are present
+    if (gameSession.game_status === 'active' && gameSession.white_player_id && gameSession.black_player_id) {
+      let updateData: any = { game_status: 'completed' };
+      if (playerColor === 'white') {
+        updateData.white_player_id = null;
+        updateData.winner = 'black';
+      } else if (playerColor === 'black') {
+        updateData.black_player_id = null;
+        updateData.winner = 'white';
+      }
+      try {
+        await supabase
+          .from('game_sessions')
+          .update(updateData)
+          .eq('id', gameSession.id);
+      } catch (err) {
+        console.error('Error updating game on exit:', err);
+      }
+    }
   };
 
   if (!user) {
