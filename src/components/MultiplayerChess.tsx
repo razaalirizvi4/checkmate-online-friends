@@ -243,6 +243,7 @@ useEffect(() => {
       setShowLobby(false);
       //setShowWaiting(true);
       
+      
       // Show a toast with the game ID and a copy button
       toast({
         title: 'Game Created!',
@@ -320,7 +321,7 @@ useEffect(() => {
       user: user?.id 
     });
     
-    if (!gameSession || gameSession.game_status !== 'active') {
+    if (!gameSession || gameSession.game_status !== 'active' || gameSession.black_player_id == null) {
       console.log('Game not active');
       return;
     }
@@ -560,6 +561,7 @@ const joinGame = async (gameId: string) => {
         black_player_id: user.id,
         game_status: 'active'
       };
+      
     } else {
       console.log('Unexpected state - both slots should not be full at this point');
       toast({
@@ -943,15 +945,38 @@ const joinGame = async (gameId: string) => {
   };
 
   // Exit game handler
-  const handleExitGame = () => {
-    setGameSession(null);
-    setBoard(initialBoard);
-    setCurrentPlayer('white');
-    setMoveHistory([]);
-    setCapturedPieces({ white: [], black: [] });
-    setPlayerColor(null);
-    setShowLobby(true);
-    setShowWaiting(false);
+  const handleExitGame = async () => {
+    if (!gameSession || !playerColor) {
+      setGameSession(null);
+      setBoard(initialBoard);
+      setCurrentPlayer('white');
+      setMoveHistory([]);
+      setCapturedPieces({ white: [], black: [] });
+      setPlayerColor(null);
+      setShowLobby(true);
+      setShowWaiting(false);
+      return;
+    }
+
+    // Only update DB if game is active and both players are present
+    if (gameSession.game_status === 'active' && gameSession.white_player_id && gameSession.black_player_id) {
+      let updateData: any = { game_status: 'completed' };
+      if (playerColor === 'white') {
+        updateData.white_player_id = null;
+        updateData.winner = 'black';
+      } else if (playerColor === 'black') {
+        updateData.black_player_id = null;
+        updateData.winner = 'white';
+      }
+      try {
+        await supabase
+          .from('game_sessions')
+          .update(updateData)
+          .eq('id', gameSession.id);
+      } catch (err) {
+        console.error('Error updating game on exit:', err);
+      }
+    }
   };
 
   if (!user) {
