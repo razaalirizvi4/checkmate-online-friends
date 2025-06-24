@@ -75,6 +75,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         await fetchProfile(session.user);
+      } else {
+        // Fallback: try to get user directly if session is null (e.g., after OAuth redirect)
+        const { data: userData } = await supabase.auth.getUser();
+        if (userData?.user) {
+          setUser(userData.user);
+          await fetchProfile(userData.user);
+        }
       }
       setLoading(false);
     };
