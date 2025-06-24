@@ -299,7 +299,15 @@ const MultiplayerChess = () => {
 
   const handleSquareClick = useCallback((position: Position) => {
     console.log('Square clicked:', position);
-    console.log('Game state:', { gameSession, gameState, currentPlayer, playerColor, isMakingMove });
+    console.log('Game state:', { 
+      gameSession: gameSession?.id, 
+      gameStatus: gameSession?.game_status, 
+      gameState, 
+      currentPlayer, 
+      playerColor, 
+      isMakingMove,
+      user: user?.id 
+    });
     
     if (!gameSession || gameSession.game_status !== 'active') {
       console.log('Game not active');
@@ -307,7 +315,7 @@ const MultiplayerChess = () => {
     }
 
     if (currentPlayer !== playerColor) {
-      console.log('Not your turn');
+      console.log('Not your turn - currentPlayer:', currentPlayer, 'playerColor:', playerColor);
       return;
     }
 
@@ -485,7 +493,6 @@ const MultiplayerChess = () => {
       }
 
       // Determine which color to assign
-      let playerColor: 'white' | 'black';
       let updateData: any = {};
 
       console.log('Current game state:', {
@@ -496,7 +503,6 @@ const MultiplayerChess = () => {
       if (!existingGame.black_player_id) {
         // Black player slot is empty - joiner becomes black
         console.log('Black player slot empty - assigning black');
-        playerColor = 'black';
         updateData = {
           black_player_id: user.id,
           game_status: 'active'
@@ -557,17 +563,13 @@ const MultiplayerChess = () => {
         setBoard(parsedBoardState);
         setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
         setMoveHistory(updateResult.move_history || []);
-        // Always set playerColor based on user ID and session
-        const isWhitePlayer = updateResult.white_player_id === user.id;
-        const isBlackPlayer = updateResult.black_player_id === user.id;
-        if (isWhitePlayer) setPlayerColor('white');
-        else if (isBlackPlayer) setPlayerColor('black');
-        else setPlayerColor(null);
+        // Set playerColor to black since we're joining as black
+        setPlayerColor('black');
         setShowLobby(false);
         
         toast({
           title: "Success!",
-          description: `You have joined the game as ${isWhitePlayer ? 'White' : isBlackPlayer ? 'Black' : 'Spectator'}!`,
+          description: "You have joined the game as Black!",
         });
       } catch (error) {
         console.error('Error parsing board state when joining:', error);
