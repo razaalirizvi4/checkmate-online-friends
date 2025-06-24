@@ -177,7 +177,7 @@ const MultiplayerChess = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameSession, user?.id, gameSession.game_status]);
+  }, [gameSession, user?.id, gameSession?.game_status]);
 
   const createGame = async () => {
     if (!user) return;
