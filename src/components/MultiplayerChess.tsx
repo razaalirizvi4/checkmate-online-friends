@@ -107,13 +107,20 @@ const MultiplayerChess = () => {
             
             if (newMoveCount >= currentMoveCount) {
               // Always update the game session and board state from real-time updates
-              setGameSession(prevSession => ({
-                ...prevSession,
-                ...updatedSession,
-                board_state: parsedBoardState,
-                current_turn: updatedSession.current_turn as 'white' | 'black',
-                game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-              }));
+              setGameSession(prevSession => {
+                const updated = {
+                  ...prevSession,
+                  ...updatedSession,
+                  board_state: parsedBoardState,
+                  current_turn: updatedSession.current_turn as 'white' | 'black',
+                  game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+                };
+                if (updated.game_status === 'active') {
+                  console.log('[RT] Game session set to ACTIVE:', updated);
+                  console.log('[RT] current_turn:', updated.current_turn, 'playerColor:', playerColor);
+                }
+                return updated;
+              });
               
               // Always update the board state
               setBoard(parsedBoardState);
@@ -128,6 +135,16 @@ const MultiplayerChess = () => {
               else setPlayerColor(null);
               
               console.log('Board state updated to:', parsedBoardState);
+              
+              if (updatedSession.game_status === 'active') {
+                console.log('[RT] Post-update state:', {
+                  current_turn: updatedSession.current_turn,
+                  playerColor,
+                  game_status: updatedSession.game_status,
+                  board,
+                  moveHistory
+                });
+              }
             } else {
               console.log('Ignoring older board state update');
             }
@@ -140,6 +157,7 @@ const MultiplayerChess = () => {
             const isBlackPlayer = updatedSession.black_player_id === user.id;
             if (isWhitePlayer || isBlackPlayer) {
               if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
+                console.log('Game is active:', updatedSession.id);
                 setShowLobby(false);
                 setShowWaiting(false);
                 // Show turn change notification
@@ -251,6 +269,11 @@ const MultiplayerChess = () => {
         ),
         duration: 10000
       });
+      
+      if (data.game_status === 'active') {
+        console.log('[CREATE] Game session set to ACTIVE:', data);
+        console.log('[CREATE] current_turn:', data.current_turn, 'playerColor:', playerColor);
+      }
       return { data, error: null };
     } catch (error) {
       console.error('Error parsing board state after game creation:', error);
@@ -632,11 +655,19 @@ const joinGame = async (gameId: string) => {
       
       console.log('Parsed board state successfully');
       
-      setGameSession({
-        ...updateResult,
-        board_state: parsedBoardState,
-        current_turn: updateResult.current_turn as 'white' | 'black',
-        game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+      setGameSession(prevSession => {
+        const updated = {
+          ...prevSession,
+          ...updateResult,
+          board_state: parsedBoardState,
+          current_turn: updateResult.current_turn as 'white' | 'black',
+          game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+        };
+        if (updated.game_status === 'active') {
+          console.log('[JOIN] Game session set to ACTIVE:', updated);
+          console.log('[JOIN] current_turn:', updated.current_turn, 'playerColor:', playerColor);
+        }
+        return updated;
       });
       setBoard(parsedBoardState);
       setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
@@ -930,6 +961,11 @@ const joinGame = async (gameId: string) => {
       else if (isBlackPlayer) setPlayerColor('black');
       else setPlayerColor(null);
       toast({ title: 'Game state refreshed!' });
+      
+      if (data.game_status === 'active') {
+        console.log('[REFRESH] Game session set to ACTIVE:', data);
+        console.log('[REFRESH] current_turn:', data.current_turn, 'playerColor:', playerColor);
+      }
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to refresh game state', variant: 'destructive' });
     }
