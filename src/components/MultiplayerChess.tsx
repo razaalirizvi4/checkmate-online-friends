@@ -316,7 +316,7 @@ const MultiplayerChess = () => {
       user: user?.id 
     });
     
-    if (!gameSession || gameSession.game_status !== 'active') {
+    if (!gameSession || gameSession.game_status !== 'active' || gameSession.black_player_id == null) {
       console.log('Game not active');
       return;
     }
