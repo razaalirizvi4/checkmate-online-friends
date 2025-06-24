@@ -23,6 +23,12 @@ const Index = () => {
   const { user, signOut, profile } = useAuth();
   const navigate = useNavigate();
 
+  // Controlled tab state
+  const [selectedTab, setSelectedTab] = React.useState(user ? "multiplayer" : "singleplayer");
+  React.useEffect(() => {
+    setSelectedTab(user ? "multiplayer" : "singleplayer");
+  }, [user]);
+
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
@@ -130,7 +136,11 @@ const Index = () => {
             )}
           </div>
           
-          <Tabs defaultValue={user ? "multiplayer" : "singleplayer"} className="w-full">
+          <Tabs
+            value={selectedTab}
+            onValueChange={setSelectedTab}
+            className="w-full"
+          >
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="multiplayer">
                 <Sword className="h-5 w-5 mr-2" />
