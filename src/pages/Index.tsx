@@ -29,7 +29,7 @@ const Index = () => {
     setSelectedTab(user ? "multiplayer" : "singleplayer");
   }, [user]);
 
-  if (loading) {
+  if (loading && user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <span className="text-xl text-[hsl(var(--bonk-text))] animate-pulse">Loading...</span>
