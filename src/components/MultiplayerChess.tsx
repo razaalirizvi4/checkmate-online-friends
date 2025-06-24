@@ -189,7 +189,7 @@ useEffect(() => {
     if (!user) return;
 
     console.log('Creating new game for user:', user.id);
-
+    // Initialize the game session with the initial board state
     const { data, error } = await supabase
       .from('game_sessions')
       .insert({
@@ -438,6 +438,7 @@ useEffect(() => {
 
   // Function to join an existing game
 const joinGame = async (gameId: string) => {
+  // Check if user is logged in and has a game session
   if (!user || !gameId.trim()) {
     console.log('Missing user or gameId:', { user: !!user, gameId: gameId.trim() });
     return;
@@ -645,7 +646,7 @@ const joinGame = async (gameId: string) => {
         ...updateResult,
         board_state: parsedBoardState,
         current_turn: updateResult.current_turn as 'white' | 'black',
-        game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+        game_status: updateResult.game_status as 'waiting' | 'active' | 'completed' | 'abandoned' // this line ensures game_status is set correctly by default
       });
       setBoard(parsedBoardState);
       setCurrentPlayer(updateResult.current_turn as 'white' | 'black');
@@ -834,6 +835,30 @@ const joinGame = async (gameId: string) => {
   // Check if it's the current player's turn
   const isPlayerTurn = currentPlayer === playerColor;
 
+  // Update Game State to active when black player joins
+
+  useEffect(() => {
+    if (gameSession && gameSession.black_player_id && gameSession.game_status === 'waiting') {
+      // Update game status to active when black player joins
+      supabase
+        .from('game_sessions')
+        .update({ game_status: 'active' })
+        .eq('id', gameSession.id)
+        .then(({ error }) => {
+          if (error) {
+            console.error('Error updating game status to active:', error);
+          } else {
+            setGameSession(prev => prev ? { ...prev, game_status: 'active' } : null);
+            setShowLobby(false);
+            toast({
+              title: "Game Started",
+              description: "The game is now active!",
+            });
+          }
+        });
+    }
+  }, [gameSession]);
+
   // Update game state based on game session status
   useEffect(() => {
     if (gameSession && gameSession.game_status === 'active') {
@@ -946,6 +971,7 @@ const joinGame = async (gameId: string) => {
 
   // Exit game handler
   const handleExitGame = async () => {
+    // Check if user is logged in and has a game session
     if (!gameSession || !playerColor) {
       setGameSession(null);
       setBoard(initialBoard);
@@ -960,14 +986,11 @@ const joinGame = async (gameId: string) => {
 
     // Only update DB if game is active and both players are present
     if (gameSession.game_status === 'active' && gameSession.white_player_id && gameSession.black_player_id) {
-      let updateData: any = { game_status: 'completed' };
-      if (playerColor === 'white') {
-        updateData.white_player_id = null;
-        updateData.winner = 'black';
-      } else if (playerColor === 'black') {
-        updateData.black_player_id = null;
-        updateData.winner = 'white';
-      }
+      let updateData: any = { 
+        game_status: 'abandoned',
+        winner: playerColor === 'white' ? 'black' : 'white'
+      };
+      
       try {
         await supabase
           .from('game_sessions')
@@ -977,6 +1000,16 @@ const joinGame = async (gameId: string) => {
         console.error('Error updating game on exit:', err);
       }
     }
+    
+    // Reset local state
+    setGameSession(null);
+    setBoard(initialBoard);
+    setCurrentPlayer('white');
+    setMoveHistory([]);
+    setCapturedPieces({ white: [], black: [] });
+    setPlayerColor(null);
+    setShowLobby(true);
+    setShowWaiting(false);
   };
 
   if (!user) {
