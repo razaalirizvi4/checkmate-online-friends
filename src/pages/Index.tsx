@@ -29,13 +29,13 @@ const Index = () => {
     setSelectedTab(user ? "multiplayer" : "singleplayer");
   }, [user]);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))]">
-        <span className="text-xl text-[hsl(var(--bonk-text))] animate-pulse">Loading...</span>
-      </div>
-    );
-  }
+  // if (loading) {
+  //   return (
+  //     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[hsl(var(--bonk-bg-start))] to-[hsl(var(--bonk-bg-end))]">
+  //       <span className="text-xl text-[hsl(var(--bonk-text))] animate-pulse">Loading...</span>
+  //     </div>
+  //   );
+  // }
 
   const handleSignOut = async () => {
     await signOut();
