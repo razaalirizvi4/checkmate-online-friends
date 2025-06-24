@@ -59,8 +59,9 @@ const Index = () => {
                   <AvatarImage src={user.user_metadata.avatar_url} />
                   <AvatarFallback>{getInitials(user.email ?? '')}</AvatarFallback>
                 </Avatar>
-                <div>
+                <div className='flex flex-col gap-2 items-center'>
                   <SidebarTitle className="text-[hsl(var(--bonk-text))]">{profile?.display_name || 'Player'}</SidebarTitle>
+                  <SidebarTitle className="text-[hsl(var(--bonk-text))]">{profile?.username || ''}</SidebarTitle>
                 </div>
               </div>
             ) : (

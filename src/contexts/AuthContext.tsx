@@ -67,7 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    setLoading(true); // Ensure loading is true on mount
+    if(user){setLoading(true);} // Ensure loading is true on mount
     const fetchSessionAndProfile = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       console.log('[AuthContext] Initial session:', session);
@@ -101,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [user]);
 
   const signUp = async (email: string, password: string, fullName: string) => {
     const redirectUrl = `${window.location.origin}/play`;
