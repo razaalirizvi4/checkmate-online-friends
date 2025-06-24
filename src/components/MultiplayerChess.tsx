@@ -228,18 +228,6 @@ const MultiplayerChess = () => {
     };
   }, [gameSession, user?.id, playerColor]);
 
-  // Add periodic board reload for active games
-  useEffect(() => {
-    if (!gameSession || gameSession.game_status !== 'active') return;
-
-    const interval = setInterval(() => {
-      console.log('Periodic board reload...');
-      reloadBoardState();
-    }, 3000); // Reload every 3 seconds
-
-    return () => clearInterval(interval);
-  }, [gameSession, reloadBoardState]);
-
   const createGame = async () => {
     if (!user) return;
 
@@ -745,45 +733,6 @@ const MultiplayerChess = () => {
     };
   }, [user]);
 
-  // Function to check current game state in database
-  const checkCurrentGameState = async () => {
-    if (!gameSession) {
-      console.log('No active game session');
-      return;
-    }
-
-    try {
-      const { data, error } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('id', gameSession.id)
-        .single();
-
-      if (error) {
-        console.error('Error fetching current game:', error);
-        return;
-      }
-
-      console.log('Current game in database:', {
-        id: data.id,
-        game_status: data.game_status,
-        current_turn: data.current_turn,
-        board_state: data.board_state,
-        move_history: data.move_history
-      });
-
-      // Parse and log the board state
-      if (typeof data.board_state === 'string') {
-        const parsedBoard = JSON.parse(data.board_state);
-        console.log('Parsed board state:', parsedBoard);
-      } else {
-        console.log('Board state (object):', data.board_state);
-      }
-    } catch (error) {
-      console.error('Error checking game state:', error);
-    }
-  };
-
   // Calculate valid moves for the selected piece
   const getValidMovesForSelectedPiece = useCallback((): Position[] => {
     if (!selectedSquare || !gameSession || gameSession.game_status !== 'active') {
@@ -1067,22 +1016,6 @@ const MultiplayerChess = () => {
               You are playing as {playerColor === 'white' ? 'White' : 'Black'}
             </p>
           )}
-          <Button
-            onClick={checkCurrentGameState}
-            size="sm"
-            variant="outline"
-            className="mt-2 text-xs"
-          >
-            Check DB State
-          </Button>
-          <Button
-            onClick={reloadBoardState}
-            size="sm"
-            variant="outline"
-            className="mt-2 text-xs ml-2"
-          >
-            Reload Board
-          </Button>
         </div>
         
         <ChessBoard
