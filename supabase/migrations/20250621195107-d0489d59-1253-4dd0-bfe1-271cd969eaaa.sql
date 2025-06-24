@@ -28,7 +28,7 @@ CREATE TABLE public.game_sessions (
   board_state JSONB NOT NULL,
   current_turn TEXT NOT NULL CHECK (current_turn IN ('white', 'black')),
   game_status TEXT NOT NULL CHECK (game_status IN ('waiting', 'active', 'completed', 'abandoned')),
-  winner TEXT CHECK (winner IN ('white', 'black', 'draw')),
+  winner TEXT CHECK (winner IN ('white', 'black', 'draw')) DEFAULT '',
   move_history TEXT[] DEFAULT '{}',
   created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
   updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
