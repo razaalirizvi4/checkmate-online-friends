@@ -39,7 +39,18 @@ const Index = () => {
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate('/landing');
+    // clear the cache and delete user data from local storage
+    localStorage.removeItem('user');
+    localStorage.removeItem('profile');
+    localStorage.removeItem('token');
+    localStorage.removeItem('supabase.auth.token');
+    localStorage.removeItem('supabase.auth.session');
+    
+    // clear data from database
+    
+
+
   };
 
   const getInitials = (email: string) => {

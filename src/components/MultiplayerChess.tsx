@@ -64,7 +64,18 @@ const MultiplayerChess = () => {
   // Replace the existing real-time subscription useEffect with this fixed version
 
 useEffect(() => {
-  if (!gameSession) return;
+  if (!gameSession) {
+    console.log('🔍 Real-time subscription NOT set up - no gameSession');
+    return;
+  }
+
+  console.log('🔍 Setting up real-time subscription for game:', gameSession.id);
+  console.log('🔍 Current gameSession state:', {
+    id: gameSession.id,
+    game_status: gameSession.game_status,
+    white_player: gameSession.white_player_id,
+    black_player: gameSession.black_player_id
+  });
 
   const channel = supabase
     .channel('game_session_changes')
@@ -77,9 +88,12 @@ useEffect(() => {
         filter: `id=eq.${gameSession.id}`
       },
       (payload) => {
+        console.log('🚨 REAL-TIME UPDATE TRIGGERED!');
+        console.log('🚨 Full payload:', payload);
+        
         const updatedSession = payload.new as any;
         
-        console.log('Real-time update received:', {
+        console.log('🚨 Real-time update received:', {
           game_status: updatedSession.game_status,
           current_turn: updatedSession.current_turn,
           white_player: updatedSession.white_player_id,
@@ -180,7 +194,10 @@ useEffect(() => {
     )
     .subscribe();
 
+  console.log('🔍 Real-time subscription set up successfully for game:', gameSession.id);
+
   return () => {
+    console.log('🔍 Cleaning up real-time subscription for game:', gameSession.id);
     supabase.removeChannel(channel);
   };
 }, [gameSession?.id, user?.id, moveHistory.length]); // Fixed dependencies
@@ -235,6 +252,14 @@ useEffect(() => {
         current_turn: data.current_turn as 'white' | 'black',
         game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
       });
+      
+      console.log('🎮 Game created - setting gameSession:', {
+        id: data.id,
+        game_status: data.game_status,
+        white_player: data.white_player_id,
+        black_player: data.black_player_id
+      });
+      
       setBoard(parsedBoardState);
       setCurrentPlayer(data.current_turn as 'white' | 'black');
       setMoveHistory(data.move_history || []);
@@ -310,8 +335,8 @@ useEffect(() => {
   }, [board, playerColor]);
 
   const handleSquareClick = useCallback((position: Position) => {
-    console.log('Square clicked:', position);
-    console.log('Game state:', { 
+    console.log('🎯 Square clicked:', position);
+    console.log('🎯 Game state:', { 
       gameSession: gameSession?.id, 
       gameStatus: gameSession?.game_status, 
       gameState, 
@@ -321,10 +346,24 @@ useEffect(() => {
       user: user?.id 
     });
     
-    if (!gameSession || gameSession.game_status !== 'active' || gameSession.black_player_id == null) {
-      console.log('Game not active');
+    console.log('🎯 Full gameSession object:', gameSession);
+    
+    if (!gameSession) {
+      console.log('❌ No gameSession found');
       return;
     }
+    
+    if (gameSession.game_status !== 'active') {
+      console.log('❌ Game status is not active:', gameSession.game_status);
+      return;
+    }
+    
+    if (gameSession.black_player_id == null) {
+      console.log('❌ No black player yet - black_player_id:', gameSession.black_player_id);
+      return;
+    }
+    
+    console.log('✅ All game checks passed, continuing with move logic');
 
     if (currentPlayer !== playerColor) {
       console.log('Not your turn - currentPlayer:', currentPlayer, 'playerColor:', playerColor);
