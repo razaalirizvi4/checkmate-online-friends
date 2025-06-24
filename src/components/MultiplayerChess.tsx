@@ -614,8 +614,17 @@ const MultiplayerChess = () => {
         return;
       }
 
-      console.log('Available games:', data);
-      setAvailableGames(data || []);
+      if (data && data.length > 0) {
+        const profileIds = data.map(g => g.white_player_id);
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, display_name, username')
+          .in('id', profileIds);
+        const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+        setAvailableGames(data.map(g => ({ ...g, creatorProfile: profileMap[g.white_player_id] })));
+      } else {
+        setAvailableGames([]);
+      }
     } catch (error) {
       console.error('Unexpected error fetching games:', error);
     }
@@ -632,8 +641,17 @@ const MultiplayerChess = () => {
         .eq('black_player_id', user.id)
         .eq('game_status', 'active')
         .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (!error) setInvitedGames(data || []);
+        .then(async ({ data, error }) => {
+          if (!error && data) {
+            // Fetch creator profiles for invites
+            const profileIds = data.map(g => g.white_player_id);
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, display_name, username')
+              .in('id', profileIds);
+            const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+            setInvitedGames(data.map(g => ({ ...g, creatorProfile: profileMap[g.white_player_id] })));
+          }
         });
     }
   }, [user]);
@@ -671,8 +689,17 @@ const MultiplayerChess = () => {
         .eq('black_player_id', user.id)
         .eq('game_status', 'active')
         .order('created_at', { ascending: false })
-        .then(({ data, error }) => {
-          if (!error) setInvitedGames(data || []);
+        .then(async ({ data, error }) => {
+          if (!error && data) {
+            // Fetch creator profiles for invites
+            const profileIds = data.map(g => g.white_player_id);
+            const { data: profiles } = await supabase
+              .from('profiles')
+              .select('id, display_name, username')
+              .in('id', profileIds);
+            const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+            setInvitedGames(data.map(g => ({ ...g, creatorProfile: profileMap[g.white_player_id] })));
+          }
         });
     }
 
@@ -787,6 +814,60 @@ const MultiplayerChess = () => {
     };
   }, [user, showLobby]);
 
+  // Manual refresh fallback
+  const manualRefreshGameState = async () => {
+    if (!gameSession) return;
+    try {
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameSession.id)
+        .single();
+      if (error) {
+        toast({ title: 'Error', description: 'Failed to refresh game state', variant: 'destructive' });
+        return;
+      }
+      let parsedBoardState;
+      if (typeof data.board_state === 'string') {
+        parsedBoardState = JSON.parse(data.board_state);
+      } else if (Array.isArray(data.board_state)) {
+        parsedBoardState = data.board_state;
+      } else {
+        parsedBoardState = initialBoard;
+      }
+      setGameSession({
+        ...data,
+        board_state: parsedBoardState,
+        current_turn: data.current_turn as 'white' | 'black',
+        game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+      });
+      setBoard(parsedBoardState);
+      setCurrentPlayer(data.current_turn as 'white' | 'black');
+      setMoveHistory(data.move_history || []);
+      // Set playerColor based on user ID
+      const isWhitePlayer = data.white_player_id === user?.id;
+      const isBlackPlayer = data.black_player_id === user?.id;
+      if (isWhitePlayer) setPlayerColor('white');
+      else if (isBlackPlayer) setPlayerColor('black');
+      else setPlayerColor(null);
+      toast({ title: 'Game state refreshed!' });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to refresh game state', variant: 'destructive' });
+    }
+  };
+
+  // Exit game handler
+  const handleExitGame = () => {
+    setGameSession(null);
+    setBoard(initialBoard);
+    setCurrentPlayer('white');
+    setMoveHistory([]);
+    setCapturedPieces({ white: [], black: [] });
+    setPlayerColor(null);
+    setShowLobby(true);
+    setShowWaiting(false);
+  };
+
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-64 space-y-4 p-8 text-center">
@@ -866,7 +947,7 @@ const MultiplayerChess = () => {
                   <CardContent className="flex items-center justify-between p-3">
                     <div className="truncate pr-4">
                       <p className="font-sans font-semibold text-sm text-white/90 truncate">
-                        ID: {game.id}
+                        ID: {game.id} by {game.creatorProfile.display_name} (@{game.creatorProfile.username})
                       </p>
                       <p className="text-xs text-white/60">
                         {new Date(game.created_at).toLocaleString()}
@@ -902,7 +983,7 @@ const MultiplayerChess = () => {
                   <CardContent className="flex items-center justify-between p-3">
                     <div className="truncate pr-4">
                       <p className="font-sans font-semibold text-sm text-white/90 truncate">
-                        ID: {game.id}
+                        ID: {game.id} by {game.creatorProfile.display_name} (@{game.creatorProfile.username})
                       </p>
                       <p className="text-xs text-white/60">
                         {new Date(game.created_at).toLocaleString()}
@@ -990,6 +1071,10 @@ const MultiplayerChess = () => {
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
       <div className="flex-shrink-0">
+        <div className="flex gap-2 mb-2">
+          <Button onClick={manualRefreshGameState} variant="outline" className="w-full">Refresh Game State</Button>
+          <Button onClick={handleExitGame} variant="destructive" className="w-full">Exit Game</Button>
+        </div>
         {/* Turn Indicator */}
         <div className="mb-4 text-center">
           <div className={cn(
