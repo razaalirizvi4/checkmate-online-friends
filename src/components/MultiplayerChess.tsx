@@ -234,7 +234,7 @@ const MultiplayerChess = () => {
       setPlayerColor('white'); // Creator becomes white
       // Show waiting screen for game creator
       setShowLobby(false);
-      setShowWaiting(true);
+      //setShowWaiting(true);
       
       // Show a toast with the game ID and a copy button
       toast({
