@@ -205,7 +205,7 @@ useEffect(() => {
 // Add a polling fallback for when real-time fails
 useEffect(() => {
   if (!gameSession || gameSession.game_status !== 'waiting') return;
-  
+
   console.log('🔄 Starting polling fallback for waiting game:', gameSession.id);
   
   const pollInterval = setInterval(async () => {
@@ -347,13 +347,12 @@ useEffect(() => {
         title: 'Game Created!',
         description: `Game ID: ${data.id}`,
         action: (
-          <button
-            style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, background: '#FFA500', color: '#222', fontWeight: 'bold', border: 'none', cursor: 'pointer' }}
+          <Button
             onClick={() => {
-              navigator.clipboard.writeText(data.id);
+              navigator.clipboard.writeText(data.id || '');
               toast({ title: 'Copied!', description: 'Game ID copied to clipboard.' });
             }}
-          >Copy</button>
+          >Copy</Button>
         ),
         duration: 10000
       });
@@ -407,6 +406,47 @@ useEffect(() => {
     return getValidMovesForPlayer(board, playerColor);
   }, [board, playerColor]);
 
+  // Add a simple board state reload function
+  const reloadBoardState = async () => {
+    if (!gameSession) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('game_sessions')
+        .select('*')
+        .eq('id', gameSession.id)
+        .single();
+        
+      if (error) {
+        console.error('Error reloading board state:', error);
+        return;
+      }
+      
+      let parsedBoardState: (ChessPiece | null)[][];
+      if (typeof data.board_state === 'string') {
+        parsedBoardState = JSON.parse(data.board_state);
+      } else if (Array.isArray(data.board_state)) {
+        parsedBoardState = data.board_state as unknown as (ChessPiece | null)[][];
+      } else {
+        parsedBoardState = initialBoard;
+      }
+      
+      setGameSession({
+        ...data,
+        board_state: parsedBoardState,
+        current_turn: data.current_turn as 'white' | 'black',
+        game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+      });
+      setBoard(parsedBoardState);
+      setCurrentPlayer(data.current_turn as 'white' | 'black');
+      setMoveHistory(data.move_history || []);
+      
+      console.log('Board state reloaded successfully');
+    } catch (error) {
+      console.error('Error in reloadBoardState:', error);
+    }
+  };
+
   const handleSquareClick = useCallback((position: Position) => {
     console.log('🎯 Square clicked:', position);
     console.log('🎯 Game state:', { 
@@ -419,32 +459,18 @@ useEffect(() => {
       user: user?.id 
     });
     
-    console.log('🎯 Full gameSession object:', gameSession);
-    
-    if (!gameSession) {
-      console.log('❌ No gameSession found');
+    if (!gameSession || gameSession.game_status !== 'active') {
+      console.log('❌ Game not active - gameSession:', !!gameSession, 'status:', gameSession?.game_status);
       return;
     }
-    
-    if (gameSession.game_status !== 'active') {
-      console.log('❌ Game status is not active:', gameSession.game_status);
-      return;
-    }
-    
-    if (gameSession.black_player_id == null) {
-      console.log('❌ No black player yet - black_player_id:', gameSession.black_player_id);
-      return;
-    }
-    
-    console.log('✅ All game checks passed, continuing with move logic');
 
     if (currentPlayer !== playerColor) {
-      console.log('Not your turn - currentPlayer:', currentPlayer, 'playerColor:', playerColor);
+      console.log('❌ Not your turn - currentPlayer:', currentPlayer, 'playerColor:', playerColor);
       return;
     }
 
     if (isMakingMove) {
-      console.log('Already making a move, please wait');
+      console.log('❌ Already making a move, please wait');
       return;
     }
 
@@ -452,17 +478,9 @@ useEffect(() => {
       const piece = board[selectedSquare.row][selectedSquare.col];
       
       if (piece && piece.color === currentPlayer) {
-        // Only allow moves that are in getValidMovesForPlayer
-        const validMoves = getValidMovesForPlayer(board, currentPlayer);
-        const isMoveValid = validMoves.some(
-          (move) =>
-            move.from.row === selectedSquare.row &&
-            move.from.col === selectedSquare.col &&
-            move.to.row === position.row &&
-            move.to.col === position.col
-        );
-        if (isMoveValid) {
-          console.log('Valid move, making move...');
+        // Use the simpler isValidMove check from the old working code
+        if (isValidMove(board, selectedSquare, position, piece)) {
+          console.log('✅ Valid move, making move...');
           setIsMakingMove(true);
           const result = makeMove(board, selectedSquare, position);
           
@@ -505,12 +523,7 @@ useEffect(() => {
               current_turn: newTurn,
               move_history: newMoveHistory,
               game_status: result.gameState === 'checkmate' ? 'completed' : 'active',
-              winner:
-                result.gameState === 'checkmate'
-                  ? (currentPlayer === 'white' ? 'white' : 'black')
-                  : result.gameState === 'draw'
-                  ? 'draw'
-                  : null,
+              winner: result.gameState === 'checkmate' ? user?.id : null,
               updated_at: new Date().toISOString() // Force update timestamp
             })
             .eq('id', gameSession.id)
@@ -526,27 +539,33 @@ useEffect(() => {
               } else {
                 console.log('Move successfully updated in database');
                 setSelectedSquare(null);
-                // Fallback: ensure isMakingMove is reset if real-time update is slow
-                setTimeout(() => {
-                  setIsMakingMove(false);
-                }, 2000);
+                
+                // Force reload board state for both players
+                await reloadBoardState();
+                
+                // Add a small delay and reload again to ensure both players get the update
+                setTimeout(async () => {
+                  await reloadBoardState();
+                }, 500);
+                
+                setIsMakingMove(false);
               }
             });
         } else {
-          console.log('Invalid move (would leave king in check)');
+          console.log('❌ Invalid move');
           setSelectedSquare(null);
         }
       }
     } else {
       const piece = board[position.row][position.col];
       if (piece && piece.color === currentPlayer) {
-        console.log('Selecting piece:', piece);
+        console.log('✅ Selecting piece:', piece);
         setSelectedSquare(position);
       } else {
-        console.log('No valid piece to select');
+        console.log('❌ No valid piece to select');
       }
     }
-  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove]);
+  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove, reloadBoardState]);
 
   // Function to join an existing game
 const joinGame = async (gameId: string) => {
@@ -1075,10 +1094,21 @@ const joinGame = async (gameId: string) => {
       if (isWhitePlayer) setPlayerColor('white');
       else if (isBlackPlayer) setPlayerColor('black');
       else setPlayerColor(null);
+      // Reset any stuck states
+      setIsMakingMove(false);
+      setSelectedSquare(null);
       toast({ title: 'Game state refreshed!' });
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to refresh game state', variant: 'destructive' });
     }
+  };
+
+  // Add a function to reset stuck move state
+  const resetMoveState = () => {
+    console.log('🔄 Manually resetting move state');
+    setIsMakingMove(false);
+    setSelectedSquare(null);
+    toast({ title: 'Move state reset', description: 'You can now make moves again.' });
   };
 
   // Exit game handler
@@ -1298,8 +1328,8 @@ const joinGame = async (gameId: string) => {
             </code>
             <Button
               onClick={() => {
-                navigator.clipboard.writeText(gameSession?.id || '');
-                toast({ title: 'Copied!', description: 'Game ID copied to clipboard.' });
+                setShowWaiting(false);
+                setShowLobby(true);
               }}
               size="sm"
               variant="outline"
@@ -1329,6 +1359,9 @@ const joinGame = async (gameId: string) => {
       <div className="flex-shrink-0">
         <div className="flex gap-2 mb-2">
           <Button onClick={manualRefreshGameState} variant="outline" className="w-full">Refresh Game State</Button>
+          <Button onClick={resetMoveState} variant="outline" className="w-full" disabled={!isMakingMove}>
+            Reset Move State
+          </Button>
           <Button onClick={handleExitGame} variant="destructive" className="w-full">Exit Game</Button>
         </div>
         {/* Turn Indicator */}
