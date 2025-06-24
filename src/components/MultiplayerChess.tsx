@@ -61,122 +61,129 @@ const MultiplayerChess = () => {
     console.log('Current player changed:', currentPlayer);
   }, [currentPlayer]);
 
-  useEffect(() => {
-    if (!gameSession) return;
+  // Replace the existing real-time subscription useEffect with this fixed version
 
-    const channel = supabase
-      .channel('game_session_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'game_sessions',
-          filter: `id=eq.${gameSession.id}`
-        },
-        (payload) => {
-          const updatedSession = payload.new as any;
+useEffect(() => {
+  if (!gameSession) return;
+
+  const channel = supabase
+    .channel('game_session_changes')
+    .on(
+      'postgres_changes',
+      {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'game_sessions',
+        filter: `id=eq.${gameSession.id}`
+      },
+      (payload) => {
+        const updatedSession = payload.new as any;
+        
+        console.log('Real-time update received:', {
+          game_status: updatedSession.game_status,
+          current_turn: updatedSession.current_turn,
+          white_player: updatedSession.white_player_id,
+          black_player: updatedSession.black_player_id,
+          board_state_type: typeof updatedSession.board_state
+        });
+        
+        try {
+          // Handle board state parsing - it might be an object or JSON string
+          let parsedBoardState: (ChessPiece | null)[][];
           
-          console.log('Real-time update received:', {
-            game_status: updatedSession.game_status,
-            current_turn: updatedSession.current_turn,
-            white_player: updatedSession.white_player_id,
-            black_player: updatedSession.black_player_id,
-            board_state_type: typeof updatedSession.board_state
-          });
+          if (typeof updatedSession.board_state === 'string') {
+            parsedBoardState = JSON.parse(updatedSession.board_state) as (ChessPiece | null)[][];
+          } else if (Array.isArray(updatedSession.board_state)) {
+            parsedBoardState = updatedSession.board_state as unknown as (ChessPiece | null)[][];
+          } else {
+            console.error('Invalid board state format:', updatedSession.board_state);
+            parsedBoardState = initialBoard;
+          }
           
-          try {
-            // Handle board state parsing - it might be an object or JSON string
-            let parsedBoardState: (ChessPiece | null)[][];
+          console.log('Parsed board state:', parsedBoardState);
+          console.log('Current board state before update:', board);
+          
+          // Check if this update is actually newer (has more moves)
+          const currentMoveCount = moveHistory.length;
+          const newMoveCount = updatedSession.move_history?.length || 0;
+          
+          if (newMoveCount >= currentMoveCount) {
+            // CRITICAL FIX: Always update the game session state
+            const newGameSession = {
+              ...gameSession, // Keep the existing session data
+              ...updatedSession, // Override with new data
+              board_state: parsedBoardState,
+              current_turn: updatedSession.current_turn as 'white' | 'black',
+              game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+            };
             
-            if (typeof updatedSession.board_state === 'string') {
-              parsedBoardState = JSON.parse(updatedSession.board_state) as (ChessPiece | null)[][];
-            } else if (Array.isArray(updatedSession.board_state)) {
-              parsedBoardState = updatedSession.board_state as unknown as (ChessPiece | null)[][];
-            } else {
-              console.error('Invalid board state format:', updatedSession.board_state);
-              parsedBoardState = initialBoard;
-            }
+            console.log('Updating gameSession from:', gameSession?.game_status, 'to:', newGameSession.game_status);
             
-            console.log('Parsed board state:', parsedBoardState);
-            console.log('Current board state before update:', board);
+            setGameSession(newGameSession);
             
-            // Check if this update is actually newer (has more moves)
-            const currentMoveCount = moveHistory.length;
-            const newMoveCount = updatedSession.move_history?.length || 0;
+            // Always update the board state
+            setBoard(parsedBoardState);
+            setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
+            setMoveHistory(updatedSession.move_history || []);
             
-            if (newMoveCount >= currentMoveCount) {
-              // Always update the game session and board state from real-time updates
-              setGameSession(prevSession => ({
-                ...prevSession,
-                ...updatedSession,
-                board_state: parsedBoardState,
-                current_turn: updatedSession.current_turn as 'white' | 'black',
-                game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-              }));
-              
-              // Always update the board state
-              setBoard(parsedBoardState);
-              setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
-              setMoveHistory(updatedSession.move_history || []);
-              
-              // Always set playerColor based on user ID and session
-              const isWhitePlayer = updatedSession.white_player_id === user.id;
-              const isBlackPlayer = updatedSession.black_player_id === user.id;
-              if (isWhitePlayer) setPlayerColor('white');
-              else if (isBlackPlayer) setPlayerColor('black');
-              else setPlayerColor(null);
-              
-              console.log('Board state updated to:', parsedBoardState);
-            } else {
-              console.log('Ignoring older board state update');
-            }
+            // Always set playerColor based on user ID and session
+            const isWhitePlayer = updatedSession.white_player_id === user?.id;
+            const isBlackPlayer = updatedSession.black_player_id === user?.id;
+            if (isWhitePlayer) setPlayerColor('white');
+            else if (isBlackPlayer) setPlayerColor('black');
+            else setPlayerColor(null);
             
-            // Reset loading state since we received an update
-            setIsMakingMove(false);
-            
-            // Show appropriate notifications based on game status
-            const isWhitePlayer = updatedSession.white_player_id === user.id;
-            const isBlackPlayer = updatedSession.black_player_id === user.id;
-            if (isWhitePlayer || isBlackPlayer) {
-              if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
-                setShowLobby(false);
-                setShowWaiting(false);
-                // Show turn change notification
-                const newTurn = updatedSession.current_turn as 'white' | 'black';
-                if (newTurn === (isWhitePlayer ? 'white' : 'black')) {
-                  toast({
-                    title: "Your Turn!",
-                    description: "It's your turn to move.",
-                  });
-                } else {
-                  toast({
-                    title: "Opponent's Turn",
-                    description: "Waiting for opponent to move...",
-                  });
-                }
-              } else if (updatedSession.game_status === 'waiting') {
+            console.log('Board state updated to:', parsedBoardState);
+            console.log('Game session updated to:', newGameSession);
+          } else {
+            console.log('Ignoring older board state update');
+          }
+          
+          // Reset loading state since we received an update
+          setIsMakingMove(false);
+          
+          // Show appropriate notifications based on game status
+          const isWhitePlayer = updatedSession.white_player_id === user?.id;
+          const isBlackPlayer = updatedSession.black_player_id === user?.id;
+          if (isWhitePlayer || isBlackPlayer) {
+            if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
+              setShowLobby(false);
+              setShowWaiting(false);
+              // Show turn change notification
+              const newTurn = updatedSession.current_turn as 'white' | 'black';
+              if (newTurn === (isWhitePlayer ? 'white' : 'black')) {
                 toast({
-                  title: "Joined Game!",
-                  description: `You joined as ${isWhitePlayer ? 'White' : 'Black'}. Waiting for opponent...`,
+                  title: "Your Turn!",
+                  description: "It's your turn to move.",
+                });
+              } else {
+                toast({
+                  title: "Opponent's Turn",
+                  description: "Waiting for opponent to move...",
                 });
               }
+            } else if (updatedSession.game_status === 'waiting') {
+              toast({
+                title: "Joined Game!",
+                description: `You joined as ${isWhitePlayer ? 'White' : 'Black'}. Waiting for opponent...`,
+              });
             }
-          } catch (error) {
-            console.error('Error parsing board state:', error);
-            console.log('Raw board state:', updatedSession.board_state);
-            console.log('Board state type:', typeof updatedSession.board_state);
-            // Fallback to initial board if parsing fails
-            setBoard(initialBoard);
           }
+        } catch (error) {
+          console.error('Error parsing board state:', error);
+          console.log('Raw board state:', updatedSession.board_state);
+          console.log('Board state type:', typeof updatedSession.board_state);
+          // Fallback to initial board if parsing fails
+          setBoard(initialBoard);
         }
-      )
-      .subscribe();
+      }
+    )
+    .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [gameSession, user?.id]);
+  return () => {
+    supabase.removeChannel(channel);
+  };
+}, [gameSession?.id, user?.id, moveHistory.length]); // Fixed dependencies
 
   const createGame = async () => {
     if (!user) return;
