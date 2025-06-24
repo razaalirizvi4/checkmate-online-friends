@@ -50,55 +50,6 @@ const MultiplayerChess = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  // Function to reload board state from database
-  const reloadBoardState = useCallback(async () => {
-    if (!gameSession) return;
-
-    try {
-      console.log('Reloading board state from database...');
-      
-      const { data, error } = await supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('id', gameSession.id)
-        .single();
-
-      if (error) {
-        console.error('Error reloading board state:', error);
-        return;
-      }
-
-      console.log('Reloaded game data:', data);
-
-      // Parse board state
-      let parsedBoardState: (ChessPiece | null)[][];
-      
-      if (typeof data.board_state === 'string') {
-        parsedBoardState = JSON.parse(data.board_state) as (ChessPiece | null)[][];
-      } else if (Array.isArray(data.board_state)) {
-        parsedBoardState = data.board_state as unknown as (ChessPiece | null)[][];
-      } else {
-        console.error('Invalid board state format from database:', data.board_state);
-        parsedBoardState = initialBoard;
-      }
-
-      // Update all state from database
-      setGameSession({
-        ...data,
-        board_state: parsedBoardState,
-        current_turn: data.current_turn as 'white' | 'black',
-        game_status: data.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-      });
-      setBoard(parsedBoardState);
-      setCurrentPlayer(data.current_turn as 'white' | 'black');
-      setMoveHistory(data.move_history || []);
-      
-      console.log('Board state reloaded successfully');
-    } catch (error) {
-      console.error('Error in reloadBoardState:', error);
-    }
-  }, [gameSession, setGameSession, setBoard, setCurrentPlayer, setMoveHistory]);
-
   // Add debugging for board state changes
   useEffect(() => {
     console.log('Board state changed:', board);
@@ -183,9 +134,6 @@ const MultiplayerChess = () => {
             // Reset loading state since we received an update
             setIsMakingMove(false);
             
-            // Reload board state to ensure consistency
-            reloadBoardState();
-            
             // Show appropriate notifications based on game status
             const isWhitePlayer = updatedSession.white_player_id === user.id;
             const isBlackPlayer = updatedSession.black_player_id === user.id;
@@ -226,7 +174,7 @@ const MultiplayerChess = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [gameSession, user?.id, playerColor]);
+  }, [gameSession, user?.id]);
 
   const createGame = async () => {
     if (!user) return;
@@ -446,15 +394,6 @@ const MultiplayerChess = () => {
               } else {
                 console.log('Move successfully updated in database');
                 setSelectedSquare(null);
-                
-                // Force reload board state for both players
-                await reloadBoardState();
-                
-                // Add a small delay and reload again to ensure both players get the update
-                setTimeout(async () => {
-                  await reloadBoardState();
-                }, 500);
-                
                 setIsMakingMove(false);
               }
             });
@@ -472,7 +411,7 @@ const MultiplayerChess = () => {
         console.log('No valid piece to select');
       }
     }
-  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove, reloadBoardState]);
+  }, [board, selectedSquare, currentPlayer, gameSession, playerColor, moveHistory, isMakingMove]);
 
   // Function to join an existing game
   const joinGame = async (gameId: string) => {
