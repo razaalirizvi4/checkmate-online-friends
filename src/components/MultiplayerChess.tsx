@@ -117,11 +117,24 @@ useEffect(() => {
           console.log('Parsed board state:', parsedBoardState);
           console.log('Current board state before update:', board);
           
-          // Check if this update is actually newer (has more moves)
+          // Check if this update has different data (more aggressive checking)
           const currentMoveCount = moveHistory.length;
           const newMoveCount = updatedSession.move_history?.length || 0;
+          const currentTurn = currentPlayer;
+          const newTurn = updatedSession.current_turn;
+          const currentBoardString = JSON.stringify(board);
+          const newBoardString = JSON.stringify(parsedBoardState);
           
-          if (newMoveCount >= currentMoveCount) {
+          console.log('🚨 Comparing real-time update:', {
+            currentMoves: currentMoveCount,
+            newMoves: newMoveCount,
+            currentTurn,
+            newTurn,
+            boardChanged: currentBoardString !== newBoardString,
+            shouldUpdate: newMoveCount >= currentMoveCount || currentTurn !== newTurn || currentBoardString !== newBoardString
+          });
+          
+          if (newMoveCount >= currentMoveCount || currentTurn !== newTurn || currentBoardString !== newBoardString) {
             // CRITICAL FIX: Always update the game session state
             const newGameSession = {
               ...gameSession, // Keep the existing session data
@@ -1118,14 +1131,34 @@ const joinGame = async (gameId: string) => {
         return;
       }
       
-      // Check if we have newer data (by move count)
+      // Check if we have newer data (by move count OR different current turn OR different board state)
       const currentMoveCount = moveHistory.length;
       const dbMoveCount = data.move_history?.length || 0;
+      const currentTurn = currentPlayer;
+      const dbCurrentTurn = data.current_turn;
       
-      if (dbMoveCount > currentMoveCount) {
-        console.log('🔄 Found newer board state, updating...', {
-          currentMoves: currentMoveCount,
-          dbMoves: dbMoveCount
+      // Also check if board states are different by comparing JSON strings
+      const currentBoardString = JSON.stringify(board);
+      const dbBoardString = JSON.stringify(parsedBoardState);
+      
+      const hasNewerMoves = dbMoveCount > currentMoveCount;
+      const hasDifferentTurn = currentTurn !== dbCurrentTurn;
+      const hasDifferentBoard = currentBoardString !== dbBoardString;
+      
+      console.log('🔄 Comparing game states:', {
+        currentMoves: currentMoveCount,
+        dbMoves: dbMoveCount,
+        currentTurn,
+        dbCurrentTurn,
+        hasNewerMoves,
+        hasDifferentTurn,
+        hasDifferentBoard,
+        boardsEqual: currentBoardString === dbBoardString
+      });
+      
+      if (hasNewerMoves || hasDifferentTurn || hasDifferentBoard) {
+        console.log('🔄 Found differences, updating game state...', {
+          reason: hasNewerMoves ? 'newer moves' : hasDifferentTurn ? 'different turn' : 'different board'
         });
         
         // Update all game state
@@ -1146,6 +1179,13 @@ const joinGame = async (gameId: string) => {
         setSelectedSquare(null);
         
         console.log('✅ Board state reloaded successfully');
+        
+        // Show a toast notification about the update
+        toast({
+          title: "Game Updated",
+          description: "Board synchronized with latest moves",
+          duration: 2000
+        });
       } else {
         console.log('🔄 Board state is already up to date');
       }
@@ -1163,7 +1203,7 @@ const joinGame = async (gameId: string) => {
     const reloadInterval = setInterval(() => {
       console.log('🕒 Periodic board reload check...');
       reloadBoardState();
-    }, 10000); // Check every 10 seconds
+    }, 5000); // Check every 5 seconds for more responsive sync
     
     return () => {
       console.log('🕒 Stopping periodic board reload');
