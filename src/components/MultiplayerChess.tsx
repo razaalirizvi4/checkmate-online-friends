@@ -797,13 +797,35 @@ const joinGame = async (gameId: string) => {
 
       if (error) {
         console.error('Error fetching available games:', error);
+        setAvailableGames([]);
         return;
       }
 
-      console.log('Available games:', data);
-      setAvailableGames(data || []);
+      if (!data || data.length === 0) {
+        setAvailableGames([]);
+        return;
+      }
+
+      // Fetch creator profiles for available games
+      const profileIds = data.map(g => g.white_player_id).filter(Boolean);
+      let profileMap: Record<string, any> = {};
+      if (profileIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('id, display_name, username')
+          .in('id', profileIds);
+        profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
+      }
+
+      setAvailableGames(
+        data.map(g => ({
+          ...g,
+          creatorProfile: profileMap[g.white_player_id] || { display_name: 'Unknown', username: 'unknown' }
+        }))
+      );
     } catch (error) {
       console.error('Unexpected error fetching games:', error);
+      setAvailableGames([]);
     }
   };
 
@@ -1328,7 +1350,7 @@ const joinGame = async (gameId: string) => {
                   <CardContent className="flex items-center justify-between p-3">
                     <div className="truncate pr-4">
                       <p className="font-sans font-semibold text-sm text-white/90 truncate">
-                        ID: {game.id} by {game.creatorProfile.display_name} (@{game.creatorProfile.username})
+                        ID: {game.id} by {game.creatorProfile?.display_name || 'Unknown'} (@{game.creatorProfile?.username || 'unknown'})
                       </p>
                       <p className="text-xs text-white/60">
                         {new Date(game.created_at).toLocaleString()}
@@ -1364,7 +1386,7 @@ const joinGame = async (gameId: string) => {
                   <CardContent className="flex items-center justify-between p-3">
                     <div className="truncate pr-4">
                       <p className="font-sans font-semibold text-sm text-white/90 truncate">
-                        ID: {game.id} by {game.creatorProfile.display_name} (@{game.creatorProfile.username})
+                        ID: {game.id} by {game.creatorProfile?.display_name || 'Unknown'} (@{game.creatorProfile?.username || 'unknown'})
                       </p>
                       <p className="text-xs text-white/60">
                         {new Date(game.created_at).toLocaleString()}
