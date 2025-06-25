@@ -1203,7 +1203,7 @@ const joinGame = async (gameId: string) => {
     const reloadInterval = setInterval(() => {
       console.log('🕒 Periodic board reload check...');
       reloadBoardState();
-    }, 5000); // Check every 5 seconds for more responsive sync
+    }, 1000); // Check every 5 seconds for more responsive sync
     
     return () => {
       console.log('🕒 Stopping periodic board reload');
