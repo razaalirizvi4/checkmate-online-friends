@@ -41,7 +41,7 @@ const MultiplayerChess = () => {
   }>({ white: [], black: [] });
   const [playerColor, setPlayerColor] = useState<'white' | 'black' | null>(null);
   const [showLobby, setShowLobby] = useState(true);
-  const [showWaiting, setShowWaiting] = useState(false);
+  //const [showWaiting, setShowWaiting] = useState(false);
   const [joiningGameId, setJoiningGameId] = useState('');
   const [availableGames, setAvailableGames] = useState<any[]>([]);
   const [isMakingMove, setIsMakingMove] = useState(false);
@@ -60,6 +60,11 @@ const MultiplayerChess = () => {
   useEffect(() => {
     console.log('Current player changed:', currentPlayer);
   }, [currentPlayer]);
+
+  // Reload board state
+
+  
+
 
   // Replace the existing real-time subscription useEffect with this fixed version
 
@@ -117,67 +122,43 @@ useEffect(() => {
           console.log('Parsed board state:', parsedBoardState);
           console.log('Current board state before update:', board);
           
-          // Check if this update has different data (more aggressive checking)
-          const currentMoveCount = moveHistory.length;
-          const newMoveCount = updatedSession.move_history?.length || 0;
-          const currentTurn = currentPlayer;
-          const newTurn = updatedSession.current_turn;
-          const currentBoardString = JSON.stringify(board);
-          const newBoardString = JSON.stringify(parsedBoardState);
-          
-          console.log('🚨 Comparing real-time update:', {
-            currentMoves: currentMoveCount,
-            newMoves: newMoveCount,
-            currentTurn,
-            newTurn,
-            boardChanged: currentBoardString !== newBoardString,
-            shouldUpdate: newMoveCount >= currentMoveCount || currentTurn !== newTurn || currentBoardString !== newBoardString
-          });
-          
-          if (newMoveCount >= currentMoveCount || currentTurn !== newTurn || currentBoardString !== newBoardString) {
-            // CRITICAL FIX: Always update the game session state
-            const newGameSession = {
-              ...gameSession, // Keep the existing session data
-              ...updatedSession, // Override with new data
-              board_state: parsedBoardState,
-              current_turn: updatedSession.current_turn as 'white' | 'black',
-              game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
-            };
+            // Check if this update is actually newer (has more moves)
+            const currentMoveCount = moveHistory.length;
+            const newMoveCount = updatedSession.move_history?.length || 0;
             
-            console.log('Updating gameSession from:', gameSession?.game_status, 'to:', newGameSession.game_status);
-            
-            setGameSession(newGameSession);
-            
-            // Always update the board state
-            setBoard(parsedBoardState);
-            setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
-            setMoveHistory(updatedSession.move_history || []);
-            
-            // Always set playerColor based on user ID and session
-            const isWhitePlayer = updatedSession.white_player_id === user?.id;
-            const isBlackPlayer = updatedSession.black_player_id === user?.id;
-            if (isWhitePlayer) setPlayerColor('white');
-            else if (isBlackPlayer) setPlayerColor('black');
-            else setPlayerColor(null);
-            
-            console.log('Board state updated to:', parsedBoardState);
-            console.log('Game session updated to:', newGameSession);
+            if (newMoveCount >= currentMoveCount) {
+              // Always update the game session and board state from real-time updates
+              setGameSession(prevSession => ({
+                ...prevSession,
+                ...updatedSession,
+                board_state: parsedBoardState,
+                current_turn: updatedSession.current_turn as 'white' | 'black',
+                game_status: updatedSession.game_status as 'waiting' | 'active' | 'completed' | 'abandoned'
+              }));
+           
+                            // Always update the board state
+                            setBoard(parsedBoardState);
+                            setCurrentPlayer(updatedSession.current_turn as 'white' | 'black');
+                            setMoveHistory(updatedSession.move_history || []);
+
           } else {
             console.log('Ignoring older board state update');
           }
           
           // Reset loading state since we received an update
           setIsMakingMove(false);
+
+          // Reload board state to ensure consistency
+          reloadBoardState();
           
           // Show appropriate notifications based on game status
-          const isWhitePlayer = updatedSession.white_player_id === user?.id;
-          const isBlackPlayer = updatedSession.black_player_id === user?.id;
-          if (isWhitePlayer || isBlackPlayer) {
+            const isWhitePlayer = updatedSession.white_player_id === user?.id;
             if (updatedSession.game_status === 'active' && updatedSession.white_player_id && updatedSession.black_player_id) {
               setShowLobby(false);
-              setShowWaiting(false);
+              
               // Show turn change notification
               const newTurn = updatedSession.current_turn as 'white' | 'black';
+             
               if (newTurn === (isWhitePlayer ? 'white' : 'black')) {
                 toast({
                   title: "Your Turn!",
@@ -195,7 +176,7 @@ useEffect(() => {
                 description: `You joined as ${isWhitePlayer ? 'White' : 'Black'}. Waiting for opponent...`,
               });
             }
-          }
+          
         } catch (error) {
           console.error('Error parsing board state:', error);
           console.log('Raw board state:', updatedSession.board_state);
@@ -213,7 +194,7 @@ useEffect(() => {
     console.log('🔍 Cleaning up real-time subscription for game:', gameSession.id);
     supabase.removeChannel(channel);
   };
-}, [gameSession?.id, user?.id]); // Fixed: Removed moveHistory.length to prevent subscription restart
+}, [gameSession?.id, user?.id, playerColor]); // Fixed: Removed moveHistory.length to prevent subscription restart
 
 // Add a polling fallback for when real-time fails
 useEffect(() => {
@@ -421,6 +402,7 @@ useEffect(() => {
   }, [board, playerColor]);
 
   const handleSquareClick = useCallback((position: Position) => {
+    reloadBoardState();
     console.log('🎯 Square clicked:', position);
     console.log('🎯 Game state:', { 
       gameSession: gameSession?.id, 
@@ -460,12 +442,14 @@ useEffect(() => {
           const newTurn = currentPlayer === 'white' ? 'black' : 'white';
           const newMoveHistory = [...moveHistory, result.moveNotation];
           
-          // OPTIMISTIC UPDATE: Update local state immediately for instant UI feedback
-          setBoard(result.newBoard);
-          setCurrentPlayer(newTurn);
-          setMoveHistory(newMoveHistory);
-          setSelectedSquare(null);
+          // // OPTIMISTIC UPDATE: Update local state immediately for instant UI feedback
+          // setBoard(result.newBoard);
+          // setCurrentPlayer(newTurn);
+          // setMoveHistory(newMoveHistory);
+          // setSelectedSquare(null);
           
+          reloadBoardState();
+
           console.log('Updating database with move:', {
             board_state: result.newBoard,
             current_turn: newTurn,
@@ -766,6 +750,7 @@ const joinGame = async (gameId: string) => {
       setMoveHistory(updateResult.move_history || []);
       // Set playerColor to black since we're joining as black
       setPlayerColor('black');
+      //setPlayerColor(playerColor);
       setShowLobby(false);
       
       console.log('Game session setup complete');
@@ -800,7 +785,6 @@ const joinGame = async (gameId: string) => {
     });
   }
 };
-
   // Function to fetch available games
   const fetchAvailableGames = async () => {
     try {
@@ -816,17 +800,8 @@ const joinGame = async (gameId: string) => {
         return;
       }
 
-      if (data && data.length > 0) {
-        const profileIds = data.map(g => g.white_player_id);
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('id, display_name, username')
-          .in('id', profileIds);
-        const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
-        setAvailableGames(data.map(g => ({ ...g, creatorProfile: profileMap[g.white_player_id] })));
-      } else {
-        setAvailableGames([]);
-      }
+      console.log('Available games:', data);
+      setAvailableGames(data || []);
     } catch (error) {
       console.error('Unexpected error fetching games:', error);
     }
@@ -835,28 +810,46 @@ const joinGame = async (gameId: string) => {
   // Fetch available games when component mounts
   useEffect(() => {
     fetchAvailableGames();
-    // Fetch invited games for the current user
-    if (user) {
-      supabase
-        .from('game_sessions')
-        .select('*')
-        .eq('black_player_id', user.id)
-        .eq('game_status', 'active')
-        .order('created_at', { ascending: false })
-        .then(async ({ data, error }) => {
-          if (!error && data) {
-            // Fetch creator profiles for invites
-            const profileIds = data.map(g => g.white_player_id);
-            const { data: profiles } = await supabase
-              .from('profiles')
-              .select('id, display_name, username')
-              .in('id', profileIds);
-            const profileMap = (profiles || []).reduce((acc, p) => { acc[p.id] = p; return acc; }, {});
-            setInvitedGames(data.map(g => ({ ...g, creatorProfile: profileMap[g.white_player_id] })));
-          }
-        });
+  }, []);
+
+ // Function to check current game state in database
+ const checkCurrentGameState = async () => {
+  if (!gameSession) {
+    console.log('No active game session');
+    return;
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('game_sessions')
+      .select('*')
+      .eq('id', gameSession.id)
+      .single();
+
+    if (error) {
+      console.error('Error fetching current game:', error);
+      return;
     }
-  }, [user]);
+
+    console.log('Current game in database:', {
+      id: data.id,
+      game_status: data.game_status,
+      current_turn: data.current_turn,
+      board_state: data.board_state,
+      move_history: data.move_history
+    });
+
+    // Parse and log the board state
+    if (typeof data.board_state === 'string') {
+      const parsedBoard = JSON.parse(data.board_state);
+      console.log('Parsed board state:', parsedBoard);
+    } else {
+      console.log('Board state (object):', data.board_state);
+    }
+  } catch (error) {
+    console.error('Error checking game state:', error);
+  }
+};
 
   // Real-time subscription for available games
   useEffect(() => {
@@ -1096,7 +1089,9 @@ const joinGame = async (gameId: string) => {
   // Function to reload board state from database (fallback mechanism)
   const reloadBoardState = useCallback(async () => {
     if (!gameSession?.id) return;
-    
+
+  checkCurrentGameState();
+
     console.log('🔄 Reloading board state from database...');
     try {
       const { data, error } = await supabase
@@ -1192,7 +1187,7 @@ const joinGame = async (gameId: string) => {
     } catch (error) {
       console.error('❌ Error during board state reload:', error);
     }
-  }, [gameSession?.id, moveHistory.length, gameSession]);
+  }, [gameSession?.id, moveHistory.length, gameSession, setGameSession, setBoard, setCurrentPlayer, setMoveHistory]);
 
   // Periodic board reload for active games (fallback for missed real-time updates)
   useEffect(() => {
@@ -1222,7 +1217,7 @@ const joinGame = async (gameId: string) => {
       setCapturedPieces({ white: [], black: [] });
       setPlayerColor(null);
       setShowLobby(true);
-      setShowWaiting(false);
+      //setShowWaiting(false);
       return;
     }
 
@@ -1251,7 +1246,7 @@ const joinGame = async (gameId: string) => {
     setCapturedPieces({ white: [], black: [] });
     setPlayerColor(null);
     setShowLobby(true);
-    setShowWaiting(false);
+    //setShowWaiting(false);
   };
 
   if (!user) {
@@ -1413,46 +1408,46 @@ const joinGame = async (gameId: string) => {
     );
   }
 
-  if (showWaiting) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-64 space-y-6 p-8 text-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[hsl(var(--bonk-orange))]"></div>
-        <div className="space-y-4">
-          <h3 className="text-2xl font-bold">Waiting for Opponent</h3>
-          <p className="text-muted-foreground max-w-md">
-            Share this game ID with a friend to start playing:
-          </p>
-          <div className="flex items-center gap-2 justify-center">
-            <code className="px-4 py-2 bg-black/20 rounded-lg font-mono text-lg">
-              {gameSession?.id}
-            </code>
-            <Button
-              onClick={() => {
-                setShowWaiting(false);
-                setShowLobby(true);
-              }}
-              size="sm"
-              variant="outline"
-            >
-              Back to Lobby
-            </Button>
-          </div>
-          <p className="text-sm text-muted-foreground">
-            You'll be playing as White. The game will start automatically when your opponent joins.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setShowWaiting(false);
-            setShowLobby(true);
-          }}
-          variant="outline"
-        >
-          Back to Lobby
-        </Button>
-      </div>
-    );
-  }
+  // if (showWaiting) {
+  //   return (
+  //     <div className="flex flex-col items-center justify-center min-h-64 space-y-6 p-8 text-center">
+  //       <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[hsl(var(--bonk-orange))]"></div>
+  //       <div className="space-y-4">
+  //         <h3 className="text-2xl font-bold">Waiting for Opponent</h3>
+  //         <p className="text-muted-foreground max-w-md">
+  //           Share this game ID with a friend to start playing:
+  //         </p>
+  //         <div className="flex items-center gap-2 justify-center">
+  //           <code className="px-4 py-2 bg-black/20 rounded-lg font-mono text-lg">
+  //             {gameSession?.id}
+  //           </code>
+  //           <Button
+  //             onClick={() => {
+  //               //setShowWaiting(false);
+  //               setShowLobby(true);
+  //             }}
+  //             size="sm"
+  //             variant="outline"
+  //           >
+  //             Back to Lobby
+  //           </Button>
+  //         </div>
+  //         <p className="text-sm text-muted-foreground">
+  //           You'll be playing as White. The game will start automatically when your opponent joins.
+  //         </p>
+  //       </div>
+  //       <Button
+  //         onClick={() => {
+  //           //setShowWaiting(false);
+  //           setShowLobby(true);
+  //         }}
+  //         variant="outline"
+  //       >
+  //         Back to Lobby
+  //       </Button>
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
